@@ -78,8 +78,28 @@ def test_establish_session_no_token(httpx_mock: HTTPXMock) -> None:
 
 def test_load_credentials_missing() -> None:
     with patch("keyring.get_password", return_value=None):
-        with pytest.raises(CredentialsNotFound):
+        with pytest.raises(CredentialsNotFound, match="OOMI_USERNAME"):
             load_credentials()
+
+
+def test_load_credentials_env_var_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OOMI_USERNAME", "env@example.com")
+    monkeypatch.setenv("OOMI_PASSWORD", "envpass")
+    with patch("keyring.get_password", return_value=None):
+        user, pw = load_credentials()
+    assert user == "env@example.com"
+    assert pw == "envpass"
+
+
+def test_load_credentials_keyring_error_falls_back_to_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OOMI_USERNAME", "env@example.com")
+    monkeypatch.setenv("OOMI_PASSWORD", "envpass")
+    with patch("keyring.get_password", side_effect=Exception("no backend")):
+        user, pw = load_credentials()
+    assert user == "env@example.com"
+    assert pw == "envpass"
 
 
 def test_store_and_load_credentials() -> None:

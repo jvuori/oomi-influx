@@ -1,3 +1,4 @@
+import os
 import re
 import urllib.parse
 
@@ -18,17 +19,27 @@ def store_credentials(username: str, password: str) -> None:
 
 
 def load_credentials() -> tuple[str, str]:
-    username: str | None = keyring.get_password(_KEYRING_SERVICE, "__active_user__")
-    if not username:
-        raise CredentialsNotFound(
-            "No credentials found. Run 'oomi-influx auth login' first."
-        )
-    password: str | None = keyring.get_password(_KEYRING_SERVICE, username)
-    if not password:
-        raise CredentialsNotFound(
-            f"Password not found for {username}. Run 'oomi-influx auth login' again."
-        )
-    return username, password
+    # Try OS keyring first (desktop / interactive environments).
+    try:
+        username: str | None = keyring.get_password(_KEYRING_SERVICE, "__active_user__")
+        if username:
+            password: str | None = keyring.get_password(_KEYRING_SERVICE, username)
+            if password:
+                return username, password
+    except Exception:
+        # No keyring backend available (e.g. headless server without a secret service).
+        pass
+
+    # Fall back to environment variables (suitable for servers and CI).
+    env_user = os.environ.get("OOMI_USERNAME")
+    env_pass = os.environ.get("OOMI_PASSWORD")
+    if env_user and env_pass:
+        return env_user, env_pass
+
+    raise CredentialsNotFound(
+        "No credentials found. Run 'oomi-influx auth login' or set "
+        "OOMI_USERNAME and OOMI_PASSWORD environment variables."
+    )
 
 
 def form_login(username: str, password: str, base_url: str) -> str:
