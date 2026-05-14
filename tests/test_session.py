@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -20,7 +21,7 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
 
 RECORD = ConsumptionRecord(
     timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
-    kwh=0.1,
+    kwh=Decimal("0.1"),
 )
 
 

@@ -85,10 +85,7 @@ def fetch_consumption(
     for record in records:
         sys.stdout.write(
             json.dumps(
-                {
-                    "timestamp": record.timestamp.isoformat(),
-                    "kwh": record.kwh,
-                }
+                {"timestamp": record.timestamp.isoformat(), "kwh": float(record.kwh)}
             )
             + "\n"
         )

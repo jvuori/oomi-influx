@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from decimal import Decimal
 
 import httpx
 
@@ -98,15 +99,13 @@ def fetch_consumption(
         if not line:
             continue
         row = json.loads(line)
-        kwh = row.get("bn01")
-        if kwh is None:
+        kwh_raw = row.get("bn01")
+        if kwh_raw is None:
             continue
+        # Decimal(str(x)) is the correct way to convert a parsed JSON number:
+        # str() gives the shortest round-trip representation, so no float error leaks in.
+        kwh = Decimal(str(kwh_raw))
         timestamp = datetime.fromisoformat(row["st"])
-        records.append(
-            ConsumptionRecord(
-                timestamp=timestamp,
-                kwh=float(kwh),
-            )
-        )
+        records.append(ConsumptionRecord(timestamp=timestamp, kwh=kwh))
 
     return records

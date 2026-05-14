@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
@@ -12,7 +13,7 @@ runner = CliRunner()
 
 RECORD = ConsumptionRecord(
     timestamp=datetime(2026, 1, 1, 0, 0, tzinfo=timezone.utc),
-    kwh=0.237,
+    kwh=Decimal("0.237"),
 )
 
 

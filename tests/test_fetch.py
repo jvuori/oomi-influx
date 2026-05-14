@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
 
 import pytest
 from pytest_httpx import HTTPXMock
@@ -49,9 +50,9 @@ def test_fetch_consumption_happy_path(
     records = fetch_consumption(client, "TOKEN", "FWUID", settings, start, end)
 
     assert len(records) == 2  # null bn01 row is skipped
-    assert records[0].kwh == 0.237
+    assert records[0].kwh == Decimal("0.237")
     assert records[0].timestamp == datetime(2026, 1, 1, 0, 0, tzinfo=timezone.utc)
-    assert records[1].kwh == 0.100
+    assert records[1].kwh == Decimal("0.100")
 
 
 def test_fetch_consumption_null_kwh_skipped(
