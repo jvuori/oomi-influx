@@ -80,8 +80,6 @@ def test_fetch_consumption_returns_realistic_records(
         )
         assert r.kwh >= 0, f"Negative kWh: {r.kwh}"
         assert r.kwh < 50, f"Implausibly large kWh for a 15-min slot: {r.kwh}"
-        assert r.spot_eur_mwh >= 0, f"Negative spot price: {r.spot_eur_mwh}"
-        assert r.spot_eur_mwh < 5000, f"Implausibly large spot price: {r.spot_eur_mwh}"
 
 
 def test_fetch_consumption_timestamps_are_15min_apart(

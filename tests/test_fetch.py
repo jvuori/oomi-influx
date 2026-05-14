@@ -24,33 +24,9 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
 
 NDJSON_ROWS = "\n".join(
     [
-        json.dumps(
-            {
-                "p": "PT15M",
-                "st": "2026-01-01T00:00Z",
-                "bn01": 0.237,
-                "s": 108.72,
-                "c": 0.237,
-            }
-        ),
-        json.dumps(
-            {
-                "p": "PT15M",
-                "st": "2026-01-01T00:15Z",
-                "bn01": None,
-                "s": 90.0,
-                "c": None,
-            }
-        ),
-        json.dumps(
-            {
-                "p": "PT15M",
-                "st": "2026-01-01T00:30Z",
-                "bn01": 0.100,
-                "s": 95.0,
-                "c": 0.100,
-            }
-        ),
+        json.dumps({"p": "PT15M", "st": "2026-01-01T00:00Z", "bn01": 0.237}),
+        json.dumps({"p": "PT15M", "st": "2026-01-01T00:15Z", "bn01": None}),
+        json.dumps({"p": "PT15M", "st": "2026-01-01T00:30Z", "bn01": 0.100}),
     ]
 )
 
@@ -74,7 +50,6 @@ def test_fetch_consumption_happy_path(
 
     assert len(records) == 2  # null bn01 row is skipped
     assert records[0].kwh == 0.237
-    assert records[0].spot_eur_mwh == 108.72
     assert records[0].timestamp == datetime(2026, 1, 1, 0, 0, tzinfo=timezone.utc)
     assert records[1].kwh == 0.100
 

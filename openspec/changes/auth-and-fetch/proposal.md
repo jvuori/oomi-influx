@@ -1,8 +1,8 @@
 ## Why
 
-Oomi's customer portal has no published API. Consumption and spot-price data must be
-retrieved by replaying the browser's Salesforce Aura action calls. Before anything can
-be written to InfluxDB, we need a reliable, fully headless HTTP-only auth + fetch layer.
+Oomi's customer portal has no published API. Consumption data must be retrieved by
+replaying the browser's Salesforce Aura action calls. Before anything can be written
+to InfluxDB, we need a reliable, fully headless HTTP-only auth + fetch layer.
 
 ## What Changes
 
@@ -16,7 +16,7 @@ be written to InfluxDB, we need a reliable, fully headless HTTP-only auth + fetc
 ### New Capabilities
 
 - `auth`: Store Oomi credentials in the OS keyring; perform SOAP login and Salesforce session handshake to prove the credentials work.
-- `consumption-fetch`: Load credentials from keyring, establish a Salesforce session via raw HTTP, call `oomi_ConsumptionController.getConsumption`, and emit NDJSON records (timestamp, kWh, spot EUR/MWh).
+- `consumption-fetch`: Load credentials from env vars, establish a Salesforce session via raw HTTP, call `oomi_ConsumptionController.getConsumption`, and emit NDJSON records (timestamp, kWh).
 
 ### Modified Capabilities
 

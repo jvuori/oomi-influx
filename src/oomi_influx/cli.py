@@ -61,7 +61,7 @@ def fetch_consumption(
         typer.Option("--end", help="End datetime (ISO 8601 UTC). Default: now."),
     ] = None,
 ) -> None:
-    """Fetch consumption and spot-price records, emit NDJSON to stdout."""
+    """Fetch consumption records, emit NDJSON to stdout."""
     now = datetime.now(tz=timezone.utc)
     default_start = (now - timedelta(days=7)).replace(
         hour=0, minute=0, second=0, microsecond=0
@@ -88,7 +88,6 @@ def fetch_consumption(
                 {
                     "timestamp": record.timestamp.isoformat(),
                     "kwh": record.kwh,
-                    "spot_eur_mwh": record.spot_eur_mwh,
                 }
             )
             + "\n"

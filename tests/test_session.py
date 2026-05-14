@@ -21,7 +21,6 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
 RECORD = ConsumptionRecord(
     timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
     kwh=0.1,
-    spot_eur_mwh=100.0,
 )
 
 

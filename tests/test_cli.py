@@ -13,7 +13,6 @@ runner = CliRunner()
 RECORD = ConsumptionRecord(
     timestamp=datetime(2026, 1, 1, 0, 0, tzinfo=timezone.utc),
     kwh=0.237,
-    spot_eur_mwh=108.72,
 )
 
 
@@ -66,7 +65,7 @@ def test_fetch_consumption_stdout_ndjson(monkeypatch: pytest.MonkeyPatch) -> Non
     assert result.exit_code == 0, result.output
     row = json.loads(result.output.strip())
     assert row["kwh"] == 0.237
-    assert row["spot_eur_mwh"] == 108.72
+    assert "spot_eur_mwh" not in row
     assert "2026-01-01" in row["timestamp"]
 
 

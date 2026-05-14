@@ -15,8 +15,8 @@ def _aura_message(settings: Settings, start: datetime, end: datetime) -> str:
             "customerIdentification": settings.customer_id,
             "meteringPointEAN": settings.gsrn,
             "period": "PT15M",
-            "fetchParams": ["Consumption", "SpotPrice"],
-            "readingTypes": ["BN01", "BN02"],
+            "fetchParams": ["Consumption"],
+            "readingTypes": ["BN01"],
         }
     )
     return json.dumps(
@@ -106,7 +106,6 @@ def fetch_consumption(
             ConsumptionRecord(
                 timestamp=timestamp,
                 kwh=float(kwh),
-                spot_eur_mwh=float(row["s"]),
             )
         )
 

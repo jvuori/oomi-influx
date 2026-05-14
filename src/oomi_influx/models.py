@@ -6,7 +6,6 @@ from datetime import datetime
 class ConsumptionRecord:
     timestamp: datetime
     kwh: float
-    spot_eur_mwh: float
 
 
 class LoginError(Exception):
