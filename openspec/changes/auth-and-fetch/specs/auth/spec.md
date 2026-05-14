@@ -2,36 +2,42 @@
 
 ## Purpose
 
-Store Oomi credentials securely and provide a headless Salesforce session.
+Verify Oomi credentials and establish a headless Salesforce session.
 
 ## Requirements
 
-### Credential storage
+### Credentials
 
-- REQ-AUTH-01: `store_credentials(username, password)` stores to OS keyring under
-  service name `oomi-influx`.
-- REQ-AUTH-02: `load_credentials()` returns `(username, password)` from OS keyring;
-  raises `CredentialsNotFound` if absent.
+- REQ-AUTH-01: Credentials (`OOMI_USERNAME`, `OOMI_PASSWORD`) are read from environment
+  variables / `.env` via `Settings`. No credential storage step is performed; credentials
+  are always sourced from the environment at runtime.
 
-### SOAP login
+### Form login
 
-- REQ-AUTH-03: `soap_login(username, password) -> str` POSTs to
-  `/services/Soap/u/59.0` and returns the `sessionId` from the XML response.
-- REQ-AUTH-04: On SOAP fault (bad credentials, locked account), raises `LoginError`
-  with the fault message.
+- REQ-AUTH-02: `form_login(username, password, base_url) -> str` POSTs to `{base_url}/login`
+  with form fields `username`, `un` (JS copies username→un before submit), `pw`, and
+  standard Salesforce community login parameters (`startURL`, `lt`, `Login`, `useSecure`,
+  `hasRememberUn`, `display`). Returns the `sessionId` from the `sid=` query parameter
+  of the 302 redirect to `frontdoor.jsp`.
+- REQ-AUTH-03: On non-redirect response (login page re-displayed, bad credentials),
+  raises `LoginError`.
 
 ### Session establishment
 
-- REQ-AUTH-05: `establish_session(session_id) -> (httpx.Client, str)` performs:
+- REQ-AUTH-04: `establish_session(session_id, base_url) -> tuple[httpx.Client, str, str]`
+  performs:
   1. GET `/secur/frontdoor.jsp?sid={session_id}&retURL=/s/` with `follow_redirects=True`.
-  2. GET `/s/` on the resulting client (cookie jar carries the session cookie).
-  3. Extracts `aura.token` JWT from the HTML bootstrap via regex.
-  4. Returns the live `httpx.Client` (with cookies) and the `aura.token` string.
-- REQ-AUTH-06: If the `aura.token` pattern is not found in the HTML, raises
-  `AuraTokenNotFound`.
+  2. GET `/s/` on the resulting client (cookie jar carries the community session cookie).
+  3. Reads `aura_token` from the first cookie whose name contains `ERIC`
+     (`__Host-ERIC_PROD...`). This JWT is the Aura CSRF token set by the server.
+  4. Extracts `fwuid` from the `aura_prod.js` script URL in the `/s/` HTML via regex
+     `/sfsites/auraFW/javascript/<FWUID>/aura_prod.js`.
+  5. Returns `(client, aura_token, fwuid)`.
+- REQ-AUTH-05: If the ERIC cookie is absent, raises `AuraTokenNotFound`.
+- REQ-AUTH-06: If the fwuid regex does not match, raises `FwuidNotFound`.
 
 ### CLI — `auth login`
 
-- REQ-AUTH-07: `oomi-influx auth login` prompts for username and password (password
-  input is hidden), calls `soap_login` to verify, then calls `store_credentials`.
-- REQ-AUTH-08: Prints a success message; exits non-zero on `LoginError`.
+- REQ-AUTH-07: `oomi-influx auth login` reads credentials from `Settings` (env vars /
+  `.env`), calls `form_login` to verify they work, and prints a success message.
+- REQ-AUTH-08: Exits non-zero on `LoginError` with the error message.

@@ -3,7 +3,7 @@ import urllib.parse
 
 import httpx
 
-from .models import AuraTokenNotFound, LoginError
+from .models import AuraTokenNotFound, FwuidNotFound, LoginError
 
 # Matches the fwuid embedded in the aura_prod.js script URL on the /s/ page.
 _FWUID_RE = re.compile(r"/sfsites/auraFW/javascript/([A-Za-z0-9_\-]+)/aura_prod\.js")
@@ -60,7 +60,7 @@ def establish_session(session_id: str, base_url: str) -> tuple[httpx.Client, str
 
     fwuid_match = _FWUID_RE.search(home.text)
     if not fwuid_match:
-        raise AuraTokenNotFound(
+        raise FwuidNotFound(
             "Could not find fwuid in aura_prod.js script URL. Page structure may have changed."
         )
     fwuid = fwuid_match.group(1)

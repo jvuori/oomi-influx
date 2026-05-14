@@ -17,5 +17,9 @@ class AuraTokenNotFound(Exception):
     pass
 
 
+class FwuidNotFound(Exception):
+    pass
+
+
 class SessionExpiredError(Exception):
     pass

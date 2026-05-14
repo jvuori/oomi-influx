@@ -15,7 +15,7 @@ to InfluxDB, we need a reliable, fully headless HTTP-only auth + fetch layer.
 
 ### New Capabilities
 
-- `auth`: Store Oomi credentials in the OS keyring; perform SOAP login and Salesforce session handshake to prove the credentials work.
+- `auth`: Read credentials from env vars; perform form-POST login and Salesforce session handshake to prove the credentials work.
 - `consumption-fetch`: Load credentials from env vars, establish a Salesforce session via raw HTTP, call `oomi_ConsumptionController.getConsumption`, and emit NDJSON records (timestamp, kWh).
 
 ### Modified Capabilities
@@ -24,7 +24,7 @@ to InfluxDB, we need a reliable, fully headless HTTP-only auth + fetch layer.
 
 ## Impact
 
-- New runtime dependencies: `httpx`, `keyring`, `typer`, `python-dotenv`, `pydantic`.
+- New runtime dependencies: `httpx`, `typer`, `python-dotenv`, `pydantic`, `pydantic-settings`.
 - Dev dependencies: `ruff`, `ty`, `pytest`, `pytest-httpx`.
 - No database writes, no scheduler — caller drives everything.
 

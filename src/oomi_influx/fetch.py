@@ -102,8 +102,7 @@ def fetch_consumption(
         kwh_raw = row.get("bn01")
         if kwh_raw is None:
             continue
-        # Decimal(str(x)) is the correct way to convert a parsed JSON number:
-        # str() gives the shortest round-trip representation, so no float error leaks in.
+        # str() gives the shortest round-trip repr, so no float rounding leaks into Decimal.
         kwh = Decimal(str(kwh_raw))
         timestamp = datetime.fromisoformat(row["st"])
         records.append(ConsumptionRecord(timestamp=timestamp, kwh=kwh))

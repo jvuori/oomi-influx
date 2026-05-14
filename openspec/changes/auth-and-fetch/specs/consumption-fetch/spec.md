@@ -25,7 +25,7 @@ class ConsumptionRecord:
 
 ### Fetch function
 
-- REQ-FETCH-02: `fetch_consumption(client, aura_token, gsrn, customer_id, start, end) -> list[ConsumptionRecord]`
+- REQ-FETCH-02: `fetch_consumption(client, aura_token, fwuid, settings, start, end) -> list[ConsumptionRecord]`
   POSTs to `/s/sfsites/aura?r=1&aura.ApexAction.execute=1` with:
   - `message` JSON: `oomi_ConsumptionController.getConsumption`, period `PT15M`,
     `fetchParams: ["Consumption"]`, `readingTypes: ["BN01"]`.
@@ -40,7 +40,7 @@ class ConsumptionRecord:
 
 - REQ-FETCH-05: `OomiSession.get_consumption(start, end) -> list[ConsumptionRecord]`
   calls `fetch_consumption`; on `SessionExpiredError` re-authenticates once via
-  `auth.soap_login` + `auth.establish_session` and retries exactly once.
+  `auth.form_login` + `auth.establish_session` and retries exactly once.
 
 ### CLI — `fetch consumption`
 
@@ -48,5 +48,5 @@ class ConsumptionRecord:
   `OomiSession.get_consumption` and writes NDJSON to stdout (one record per line as
   `{"timestamp": "...", "kwh": ...}`).
 - REQ-FETCH-07: Defaults: `--start` = 7 days ago 00:00 UTC; `--end` = now UTC.
-- REQ-FETCH-08: Exits non-zero on `CredentialsNotFound` with a clear message
-  directing the user to run `oomi-influx auth login`.
+- REQ-FETCH-08: Exits non-zero on `LoginError` or `SessionExpiredError` with a clear
+  error message. Config validation errors (missing env vars) are also caught and reported.

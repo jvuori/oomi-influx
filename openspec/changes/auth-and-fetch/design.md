@@ -1,20 +1,18 @@
 ## Context
 
-Oomi's portal is Salesforce Experience Cloud. The portal uses the Salesforce Aura
-framework; all data calls go to `/s/sfsites/aura` as form-encoded POST requests
-authenticated with a session cookie and an `aura.token` JWT embedded in the page HTML.
+Oomi's portal is Salesforce Experience Cloud (LWR / Aura). All data calls go to
+`/s/sfsites/aura` as form-encoded POST requests authenticated with a community session
+cookie and an `aura.token` JWT. There is no OAuth2 endpoint exposed to external clients.
 
-There is no OAuth2 endpoint exposed to external clients. The only headless login
-path is the **Salesforce SOAP Login API** (`/services/Soap/u/59.0`), which accepts
-username + password in an XML envelope and returns a `sessionId`. That session ID is
-then handed off via `/secur/frontdoor.jsp` to set the community session cookie, after
-which the `aura.token` can be scraped from the `/s/` HTML and used in Aura calls.
+The headless login path is a **form POST to `/login`** — the same request the browser
+submits when the user clicks "Log In". A successful login returns a 302 redirect to
+`/secur/frontdoor.jsp?sid=<sessionId>`, from which the community session is established.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Headless re-authentication from keyring credentials with no browser dependency.
+- Headless authentication from env-var credentials with no browser dependency.
 - Encapsulate session lifetime: auto-reauth on 401 or redirect-to-login.
 - Thin CLI surface (`auth login`, `fetch consumption`) to drive manual testing.
 
@@ -25,11 +23,11 @@ which the `aura.token` can be scraped from the `/s/` HTML and used in Aura calls
 
 ## Decisions
 
-### D1 — Credentials stored as username + password, not a session token
+### D1 — Credentials in environment variables, not a session token
 
 Sessions expire (hours); storing a session token would require re-login on every cold
-start anyway. Storing username + password and re-authenticating via SOAP on demand is
-simpler and equally secure given OS keyring protection.
+start anyway. Storing username + password in env vars / `.env` and re-authenticating
+via form POST on demand is simpler, and `.env` is already git-ignored per AGENTS.md.
 
 *Alternative considered*: persist the session cookie between runs. Rejected: sessions
 are short-lived (2–8 h), and persisting them adds state management complexity with no
@@ -44,40 +42,46 @@ with a cookie jar is sufficient.
 *Alternative*: `requests`. Equivalent capability; `httpx` is preferred per project
 conventions.
 
-### D3 — `aura.token` extracted via regex from HTML bootstrap
+### D3 — `aura_token` from ERIC cookie; `fwuid` via regex on script URL
 
-The token is embedded as `"token":"<JWT>"` inside the Salesforce bootstrap JSON in
-the `/s/` page HTML. A targeted regex is reliable and avoids an HTML-parser dependency.
+After the frontdoor handshake, the server sets a `__Host-ERIC_PROD...` cookie whose
+value is the Aura CSRF token (a JWT). Reading it from the cookie jar is more reliable
+than scraping HTML.
+
+The Aura framework UID (`fwuid`) is extracted via regex from the `aura_prod.js` script
+URL embedded in the `/s/` page HTML:
+`/sfsites/auraFW/javascript/<FWUID>/aura_prod.js`.
 
 ### D4 — Non-secret config (GSRN, customerIdentification) in `.env`
 
 GSRN and the Salesforce `customerIdentification` field are personal/account identifiers
-(must never be committed per AGENTS.md) but do not need the extra encryption of OS
-keyring. `.env` with `python-dotenv` is sufficient.
+(must never be committed per AGENTS.md) but do not need extra encryption. `.env` with
+`pydantic-settings` is sufficient.
 
 ### D5 — Module layout
 
 ```
 src/oomi_influx/
   __init__.py
-  auth.py        # keyring helpers, SOAP login, frontdoor, aura.token extraction
-  session.py     # OomiSession: holds client + token; auto-reauth wrapper
+  auth.py        # form_login, establish_session (ERIC cookie + fwuid extraction)
+  session.py     # OomiSession: holds client + token + fwuid; auto-reauth wrapper
   fetch.py       # getConsumption Aura call + NDJSON parse → list[ConsumptionRecord]
-  models.py      # ConsumptionRecord (dataclass / typed dict)
-  config.py      # pydantic Settings loaded from .env
+  models.py      # ConsumptionRecord (dataclass); exception types
+  config.py      # pydantic Settings loaded from env / .env
   cli.py         # Typer app: auth login, fetch consumption
 ```
 
 ## Risks / Trade-offs
 
-- **SOAP endpoint availability**: Some Salesforce orgs restrict SOAP login to
-  `login.salesforce.com` only. If `https://www.oma.oomi.fi/services/Soap/u/59.0`
-  rejects community user credentials, the approach breaks. → *Mitigation*: verify
-  with a live test immediately; if blocked, fall back to form-POST login scrape.
+- **ERIC cookie rename**: A Salesforce release could rename the `__Host-ERIC_PROD...`
+  cookie. → *Mitigation*: the code matches any cookie containing `ERIC`; a rename
+  that drops `ERIC` entirely will raise `AuraTokenNotFound` immediately with a clear
+  message.
 
-- **`aura.token` format change**: Salesforce releases are tri-annual; a release could
-  change where the token appears in the bootstrap HTML. → *Mitigation*: regex failure
-  raises a clear `AuraTokenNotFound` exception; easy to update the pattern.
+- **`fwuid` URL pattern change**: Salesforce releases are tri-annual; a release could
+  change the `aura_prod.js` script URL structure. → *Mitigation*: regex failure raises
+  `FwuidNotFound` immediately; the pattern is a one-line constant easy to update.
 
-- **Session cookie domain**: If `/secur/frontdoor.jsp` sets a cookie scoped to a
-  subdomain different from `/s/sfsites/aura`'s host, the cookie won't attach. → *Mitigation*: `httpx.Client` with `follow_redirects=True`; inspect cookie jar in tests.
+- **Login form field change**: If Oomi changes the login form fields (e.g. removes `un`),
+  the POST will silently succeed with a non-redirect response and `LoginError` will be
+  raised. → *Mitigation*: clear error message; `/oomi:debug` skill guides investigation.

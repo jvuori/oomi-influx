@@ -22,7 +22,7 @@
 ## Dependencies
 
 - Use only **well-established, high-reputation third-party packages**.
-- Keep the dependency surface **as small as possible** — this is a library and consumers inherit every dependency.
+- Keep the dependency surface **as small as possible** — every dependency is an attack surface and an upgrade burden.
 - Prefer packages from the Python scientific / data ecosystem (e.g. `httpx`, `influxdb-client`, `pydantic`) over obscure alternatives.
 
 ## Linting and quality
