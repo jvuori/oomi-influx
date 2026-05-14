@@ -1,0 +1,22 @@
+schema: spec-driven
+
+# Project context
+# Shown to AI when creating artifacts.
+context: |
+  Domain: Oomi (Finnish energy retailer) — time-series data ingestion into InfluxDB.
+  Purpose: ETL/ingestion pipelines that pull metering and market data from upstream
+  Oomi sources and write it to InfluxDB for downstream analytics and reporting.
+  Tech stack: Python. Prefer the official `influxdb-client` (InfluxDB 2.x / Flux) unless
+  a spec specifies otherwise. Configuration via environment variables; secrets never
+  committed.
+  Conventions: conventional commits; keep changes small and reviewable.
+
+# Per-artifact rules
+rules:
+  proposal:
+    - Keep proposals concise — under ~500 words
+    - Always include a "Non-goals" section
+  tasks:
+    - Break tasks into chunks of at most ~2 hours of work
+  commit:
+    - Use Conventional Commits (feat:, fix:, chore:, docs:, refactor:, test:)
