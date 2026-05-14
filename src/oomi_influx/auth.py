@@ -59,6 +59,10 @@ def establish_session(session_id: str, base_url: str) -> tuple[httpx.Client, str
         )
 
     fwuid_match = _FWUID_RE.search(home.text)
-    fwuid = fwuid_match.group(1) if fwuid_match else ""
+    if not fwuid_match:
+        raise AuraTokenNotFound(
+            "Could not find fwuid in aura_prod.js script URL. Page structure may have changed."
+        )
+    fwuid = fwuid_match.group(1)
 
     return client, aura_token, fwuid

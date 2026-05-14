@@ -36,6 +36,13 @@ Before every commit:
 
 All four must pass with no errors before changes are committed.
 
+## Error handling and defensive programming
+
+- **Prefer raising exceptions over silently coping.** If something is wrong, throw an exception and let it surface as a traceback. Do not write code that tries to paper over incorrect behaviour.
+- Never swallow exceptions with bare `except: pass` or catch-all handlers that hide the root cause.
+- Avoid silent fallbacks (e.g. returning `None`, `""`, or `0`) when the absence of a value indicates a real error condition.
+- Validate assumptions with `assert` or explicit `raise` statements rather than hoping downstream code will detect the problem.
+
 ## Git commit messages
 
 - Never include `Co-Authored-By` lines in commit messages.

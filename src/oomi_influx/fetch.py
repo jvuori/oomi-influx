@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 
 import httpx
 
@@ -80,15 +80,17 @@ def fetch_consumption(
     if outer.get("exceptionEvent") or outer.get("hasErrors"):
         raise SessionExpiredError("Aura response indicates session error")
 
-    actions = outer.get("actions") or []
+    actions = outer.get("actions")
     if not actions:
-        return []
+        raise SessionExpiredError(f"Aura response has no actions: {outer!r}")
 
-    outer_rv = actions[0].get("returnValue") or {}
-    if isinstance(outer_rv, dict):
-        ndjson_text: str = outer_rv.get("returnValue") or ""
-    else:
-        ndjson_text = str(outer_rv)
+    outer_rv = actions[0].get("returnValue")
+    if not isinstance(outer_rv, dict):
+        raise SessionExpiredError(
+            f"Unexpected Aura returnValue type {type(outer_rv).__name__!r}: {outer_rv!r}"
+        )
+
+    ndjson_text: str = outer_rv.get("returnValue") or ""
 
     records: list[ConsumptionRecord] = []
     for line in ndjson_text.splitlines():
@@ -99,15 +101,12 @@ def fetch_consumption(
         kwh = row.get("bn01")
         if kwh is None:
             continue
-        ts_str: str = row["st"]
-        if ts_str.endswith("Z"):
-            ts_str = ts_str[:-1] + "+00:00"
-        timestamp = datetime.fromisoformat(ts_str).replace(tzinfo=timezone.utc)
+        timestamp = datetime.fromisoformat(row["st"])
         records.append(
             ConsumptionRecord(
                 timestamp=timestamp,
                 kwh=float(kwh),
-                spot_eur_mwh=float(row.get("s") or 0),
+                spot_eur_mwh=float(row["s"]),
             )
         )
 

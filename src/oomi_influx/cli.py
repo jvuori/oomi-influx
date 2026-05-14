@@ -7,7 +7,7 @@ import typer
 
 from .auth import form_login
 from .config import Settings
-from .models import LoginError
+from .models import LoginError, SessionExpiredError
 from .session import OomiSession
 
 app = typer.Typer(no_args_is_help=True)
@@ -78,7 +78,7 @@ def fetch_consumption(
     try:
         session = OomiSession(settings)
         records = session.get_consumption(resolved_start, resolved_end)
-    except Exception as exc:
+    except (LoginError, SessionExpiredError) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1)
 
