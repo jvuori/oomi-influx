@@ -1,14 +1,10 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 import httpx
 
-from .auth import establish_session, form_login, load_credentials
+from .auth import establish_session, form_login
 from .config import Settings
 from .models import ConsumptionRecord, SessionExpiredError
-
-if TYPE_CHECKING:
-    pass
 
 
 class OomiSession:
@@ -19,8 +15,11 @@ class OomiSession:
         self._fwuid: str = ""
 
     def _authenticate(self) -> None:
-        username, password = load_credentials()
-        session_id = form_login(username, password, self._settings.base_url)
+        session_id = form_login(
+            self._settings.username,
+            self._settings.password,
+            self._settings.base_url,
+        )
         self._client, self._aura_token, self._fwuid = establish_session(
             session_id, self._settings.base_url
         )

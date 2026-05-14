@@ -7,3 +7,5 @@ class Settings(BaseSettings):
     gsrn: str
     customer_id: str
     base_url: str = "https://www.oma.oomi.fi"
+    username: str
+    password: str

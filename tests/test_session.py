@@ -13,6 +13,8 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
     monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
     monkeypatch.setenv("OOMI_BASE_URL", "https://oomi.test")
+    monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
+    monkeypatch.setenv("OOMI_PASSWORD", "secret")
     return Settings()  # type: ignore[missing-argument]  # ty:ignore[missing-argument]
 
 
@@ -27,7 +29,6 @@ def test_get_consumption_reauthenticates_on_expiry(settings: Settings) -> None:
     session = OomiSession(settings)
 
     with (
-        patch("oomi_influx.session.load_credentials", return_value=("u", "pw")),
         patch("oomi_influx.session.form_login", return_value="SID") as mock_login,
         patch(
             "oomi_influx.session.establish_session",
@@ -49,7 +50,6 @@ def test_get_consumption_no_reauth_needed(settings: Settings) -> None:
     session = OomiSession(settings)
 
     with (
-        patch("oomi_influx.session.load_credentials", return_value=("u", "pw")),
         patch("oomi_influx.session.form_login", return_value="SID") as mock_login,
         patch(
             "oomi_influx.session.establish_session",

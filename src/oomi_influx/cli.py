@@ -5,9 +5,9 @@ from typing import Annotated, Optional
 
 import typer
 
-from .auth import form_login, store_credentials
+from .auth import form_login
 from .config import Settings
-from .models import CredentialsNotFound, LoginError
+from .models import LoginError
 from .session import OomiSession
 
 app = typer.Typer(no_args_is_help=True)
@@ -17,20 +17,21 @@ app.add_typer(auth_app, name="auth")
 
 @auth_app.command("login")
 def auth_login() -> None:
-    """Store Oomi credentials in the OS keyring after verifying they work."""
-    username = typer.prompt("Oomi username (email)")
-    password = typer.prompt("Oomi password", hide_input=True)
+    """Verify Oomi credentials from OOMI_USERNAME / OOMI_PASSWORD env vars."""
+    try:
+        settings = Settings()  # ty:ignore[missing-argument]
+    except Exception as exc:
+        typer.echo(f"Config error: {exc}", err=True)
+        raise typer.Exit(1)
 
-    settings = Settings()  # type: ignore[missing-argument]  # ty:ignore[missing-argument]
     typer.echo("Verifying credentials…")
     try:
-        form_login(username, password, settings.base_url)
+        form_login(settings.username, settings.password, settings.base_url)
     except LoginError as exc:
         typer.echo(f"Login failed: {exc}", err=True)
         raise typer.Exit(1)
 
-    store_credentials(username, password)
-    typer.echo("Credentials stored successfully.")
+    typer.echo("Credentials OK.")
 
 
 fetch_app = typer.Typer(no_args_is_help=True)
@@ -69,7 +70,7 @@ def fetch_consumption(
     resolved_end = _parse_dt(end, now)
 
     try:
-        settings = Settings()  # type: ignore[missing-argument]  # ty:ignore[missing-argument]
+        settings = Settings()  # ty:ignore[missing-argument]
     except Exception as exc:
         typer.echo(f"Config error: {exc}", err=True)
         raise typer.Exit(1)
@@ -77,9 +78,6 @@ def fetch_consumption(
     try:
         session = OomiSession(settings)
         records = session.get_consumption(resolved_start, resolved_end)
-    except CredentialsNotFound as exc:
-        typer.echo(str(exc), err=True)
-        raise typer.Exit(1)
     except Exception as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1)

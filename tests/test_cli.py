@@ -6,7 +6,7 @@ import pytest
 from typer.testing import CliRunner
 
 from oomi_influx.cli import app
-from oomi_influx.models import ConsumptionRecord, CredentialsNotFound, LoginError
+from oomi_influx.models import ConsumptionRecord, LoginError
 
 runner = CliRunner()
 
@@ -20,24 +20,24 @@ RECORD = ConsumptionRecord(
 def test_auth_login_success(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
     monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
+    monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
+    monkeypatch.setenv("OOMI_PASSWORD", "secret")
 
-    with (
-        patch("oomi_influx.cli.form_login", return_value="SID"),
-        patch("oomi_influx.cli.store_credentials") as mock_store,
-    ):
-        result = runner.invoke(app, ["auth", "login"], input="u@x.com\nsecret\n")
+    with patch("oomi_influx.cli.form_login", return_value="SID"):
+        result = runner.invoke(app, ["auth", "login"])
 
     assert result.exit_code == 0, result.output
-    assert "stored" in result.output.lower()
-    mock_store.assert_called_once_with("u@x.com", "secret")
+    assert "OK" in result.output
 
 
 def test_auth_login_bad_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
     monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
+    monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
+    monkeypatch.setenv("OOMI_PASSWORD", "wrong")
 
     with patch("oomi_influx.cli.form_login", side_effect=LoginError("Invalid login")):
-        result = runner.invoke(app, ["auth", "login"], input="u@x.com\nwrong\n")
+        result = runner.invoke(app, ["auth", "login"])
 
     assert result.exit_code == 1
     assert "Invalid login" in result.output
@@ -46,6 +46,8 @@ def test_auth_login_bad_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_fetch_consumption_stdout_ndjson(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
     monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
+    monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
+    monkeypatch.setenv("OOMI_PASSWORD", "secret")
 
     with patch("oomi_influx.cli.OomiSession") as MockSession:
         MockSession.return_value.get_consumption.return_value = [RECORD]
@@ -68,15 +70,15 @@ def test_fetch_consumption_stdout_ndjson(monkeypatch: pytest.MonkeyPatch) -> Non
     assert "2026-01-01" in row["timestamp"]
 
 
-def test_fetch_consumption_no_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fetch_consumption_login_error(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
     monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
+    monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
+    monkeypatch.setenv("OOMI_PASSWORD", "bad")
 
     with patch("oomi_influx.cli.OomiSession") as MockSession:
-        MockSession.return_value.get_consumption.side_effect = CredentialsNotFound(
-            "Run auth login"
-        )
+        MockSession.return_value.get_consumption.side_effect = LoginError("bad creds")
         result = runner.invoke(app, ["fetch", "consumption"])
 
     assert result.exit_code == 1
-    assert "Run auth login" in result.output
+    assert "bad creds" in result.output

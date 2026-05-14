@@ -9,10 +9,6 @@ class ConsumptionRecord:
     spot_eur_mwh: float
 
 
-class CredentialsNotFound(Exception):
-    pass
-
-
 class LoginError(Exception):
     pass
 
