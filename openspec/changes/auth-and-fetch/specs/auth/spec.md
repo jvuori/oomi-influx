@@ -14,7 +14,7 @@ Verify Oomi credentials and establish a headless Salesforce session.
 
 ### Form login
 
-- REQ-AUTH-02: `form_login(username, password, base_url) -> str` POSTs to `{base_url}/login`
+- REQ-AUTH-02: `form_login(username, password) -> str` POSTs to `BASE_URL/login`
   with form fields `username`, `un` (JS copies username→un before submit), `pw`, and
   standard Salesforce community login parameters (`startURL`, `lt`, `Login`, `useSecure`,
   `hasRememberUn`, `display`). Returns the `sessionId` from the `sid=` query parameter
@@ -24,10 +24,9 @@ Verify Oomi credentials and establish a headless Salesforce session.
 
 ### Session establishment
 
-- REQ-AUTH-04: `establish_session(session_id, base_url) -> tuple[httpx.Client, str, str]`
-  performs:
-  1. GET `/secur/frontdoor.jsp?sid={session_id}&retURL=/s/` with `follow_redirects=True`.
-  2. GET `/s/` on the resulting client (cookie jar carries the community session cookie).
+- REQ-AUTH-04: `establish_session(session_id) -> tuple[httpx.Client, str, str]` performs:
+  1. GET `BASE_URL/secur/frontdoor.jsp?sid={session_id}&retURL=/s/` with `follow_redirects=True`.
+  2. GET `BASE_URL/s/` on the resulting client (cookie jar carries the community session cookie).
   3. Reads `aura_token` from the first cookie whose name contains `ERIC`
      (`__Host-ERIC_PROD...`). This JWT is the Aura CSRF token set by the server.
   4. Extracts `fwuid` from the `aura_prod.js` script URL in the `/s/` HTML via regex

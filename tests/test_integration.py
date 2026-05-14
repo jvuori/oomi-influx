@@ -33,8 +33,8 @@ def settings() -> Settings:
 @pytest.fixture(scope="module")
 def live_session(settings: Settings):
     """Establish one real session shared across all integration tests."""
-    sid = form_login(settings.username, settings.password, settings.base_url)
-    client, token, fwuid = establish_session(sid, settings.base_url)
+    sid = form_login(settings.username, settings.password)
+    client, token, fwuid = establish_session(sid)
     yield client, token, fwuid
     client.close()
 
@@ -43,14 +43,14 @@ pytestmark = pytest.mark.integration
 
 
 def test_form_login_returns_session_id(settings: Settings) -> None:
-    sid = form_login(settings.username, settings.password, settings.base_url)
+    sid = form_login(settings.username, settings.password)
     assert sid, "form_login returned empty session ID"
     assert len(sid) > 10, f"Session ID looks too short: {sid!r}"
 
 
 def test_establish_session_returns_token_and_fwuid(settings: Settings) -> None:
-    sid = form_login(settings.username, settings.password, settings.base_url)
-    client, token, fwuid = establish_session(sid, settings.base_url)
+    sid = form_login(settings.username, settings.password)
+    client, token, fwuid = establish_session(sid)
     client.close()
 
     assert token.count(".") >= 2, f"aura_token doesn't look like a JWT: {token!r}"

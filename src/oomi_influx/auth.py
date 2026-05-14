@@ -3,17 +3,18 @@ import urllib.parse
 
 import httpx
 
+from .config import BASE_URL
 from .models import AuraTokenNotFound, FwuidNotFound, LoginError
 
 # Matches the fwuid embedded in the aura_prod.js script URL on the /s/ page.
 _FWUID_RE = re.compile(r"/sfsites/auraFW/javascript/([A-Za-z0-9_\-]+)/aura_prod\.js")
 
 
-def form_login(username: str, password: str, base_url: str) -> str:
+def form_login(username: str, password: str) -> str:
     """POST to /login form, follow redirect, return sid from frontdoor.jsp URL."""
     with httpx.Client(follow_redirects=False, timeout=30) as client:
         response = client.post(
-            f"{base_url}/login",
+            f"{BASE_URL}/login",
             data={
                 "username": username,
                 "un": username,  # JS copies username→un before submit
@@ -40,12 +41,12 @@ def form_login(username: str, password: str, base_url: str) -> str:
     )
 
 
-def establish_session(session_id: str, base_url: str) -> tuple[httpx.Client, str, str]:
+def establish_session(session_id: str) -> tuple[httpx.Client, str, str]:
     """Return (client, aura_token, fwuid) for use in Aura API calls."""
     client = httpx.Client(follow_redirects=True, timeout=30)
 
-    client.get(f"{base_url}/secur/frontdoor.jsp?sid={session_id}&retURL=/s/")
-    home = client.get(f"{base_url}/s/")
+    client.get(f"{BASE_URL}/secur/frontdoor.jsp?sid={session_id}&retURL=/s/")
+    home = client.get(f"{BASE_URL}/s/")
 
     # The Aura CSRF token is the __Host-ERIC_PROD... cookie set by the server.
     aura_token = next(

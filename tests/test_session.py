@@ -13,7 +13,6 @@ from oomi_influx.session import OomiSession
 def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
     monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
-    monkeypatch.setenv("OOMI_BASE_URL", "https://oomi.test")
     monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
     monkeypatch.setenv("OOMI_PASSWORD", "secret")
     return Settings()  # type: ignore[missing-argument]  # ty:ignore[missing-argument]

@@ -50,7 +50,6 @@ cp .env.example .env
 |---|---|
 | `OOMI_GSRN` | Your meter EAN (18-digit number on your electricity contract) |
 | `OOMI_CUSTOMER_ID` | Salesforce customer identifier (visible in portal network traffic) |
-| `OOMI_BASE_URL` | Portal base URL — default `https://www.oma.oomi.fi` |
 | `OOMI_USERNAME` | Your Oomi login email |
 | `OOMI_PASSWORD` | Your Oomi password |
 

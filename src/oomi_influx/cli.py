@@ -26,7 +26,7 @@ def auth_login() -> None:
 
     typer.echo("Verifying credentials…")
     try:
-        form_login(settings.username, settings.password, settings.base_url)
+        form_login(settings.username, settings.password)
     except LoginError as exc:
         typer.echo(f"Login failed: {exc}", err=True)
         raise typer.Exit(1)

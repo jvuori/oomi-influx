@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import httpx
 
-from .config import Settings
+from .config import BASE_URL, Settings
 from .models import ConsumptionRecord, SessionExpiredError
 
 
@@ -63,7 +63,7 @@ def fetch_consumption(
     start: datetime,
     end: datetime,
 ) -> list[ConsumptionRecord]:
-    url = f"{settings.base_url}/s/sfsites/aura?r=1&aura.ApexAction.execute=1"
+    url = f"{BASE_URL}/s/sfsites/aura?r=1&aura.ApexAction.execute=1"
     data = {
         "message": _aura_message(settings, start, end),
         "aura.context": _aura_context(fwuid),

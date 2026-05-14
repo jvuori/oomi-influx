@@ -15,14 +15,8 @@ class OomiSession:
         self._fwuid: str = ""
 
     def _authenticate(self) -> None:
-        session_id = form_login(
-            self._settings.username,
-            self._settings.password,
-            self._settings.base_url,
-        )
-        self._client, self._aura_token, self._fwuid = establish_session(
-            session_id, self._settings.base_url
-        )
+        session_id = form_login(self._settings.username, self._settings.password)
+        self._client, self._aura_token, self._fwuid = establish_session(session_id)
 
     def _ensure_authenticated(self) -> tuple[httpx.Client, str, str]:
         if self._client is None or self._aura_token is None:

@@ -21,7 +21,7 @@ class ConsumptionRecord:
 - REQ-FETCH-01: Runtime config loaded from environment / `.env`:
   - `OOMI_GSRN` — meter EAN (e.g. `643000000000000000`)
   - `OOMI_CUSTOMER_ID` — Salesforce `customerIdentification` field value
-  - `OOMI_BASE_URL` — default `https://www.oma.oomi.fi` (overridable for testing)
+  - Portal base URL is the compile-time constant `BASE_URL = "https://www.oma.oomi.fi"` in `config.py`.
 
 ### Fetch function
 
