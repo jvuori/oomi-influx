@@ -6,6 +6,7 @@ class Settings(BaseSettings):
         env_prefix="OOMI_",
         env_file=".env",
         dotenv_filtering="match_prefix",
+        extra="ignore",
     )
 
     gsrn: str
@@ -19,6 +20,7 @@ class InfluxSettings(BaseSettings):
         env_prefix="INFLUX_",
         env_file=".env",
         dotenv_filtering="match_prefix",
+        extra="ignore",
     )
 
     url: str
