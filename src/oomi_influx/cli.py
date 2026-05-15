@@ -1,6 +1,9 @@
 import json
+import logging
+import os
 import sys
 from datetime import datetime, timedelta, timezone
+from logging.handlers import RotatingFileHandler
 from typing import Annotated, Optional
 
 import typer
@@ -12,6 +15,30 @@ from .fetch import SessionExpiredError, fetch_account_info
 from .influx import write_consumption
 
 app = typer.Typer(no_args_is_help=True)
+logger = logging.getLogger(__name__)
+
+
+def _setup_logging() -> None:
+    root = logging.getLogger()
+    if root.handlers:
+        return
+    root.setLevel(logging.INFO)
+    fmt = logging.Formatter(
+        "%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    stderr_handler = logging.StreamHandler()
+    stderr_handler.setFormatter(fmt)
+    root.addHandler(stderr_handler)
+    log_file = os.environ.get("OOMI_INFLUX_LOG_FILE")
+    if log_file:
+        fh = RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=3)
+        fh.setFormatter(fmt)
+        root.addHandler(fh)
+
+
+@app.callback()
+def _init() -> None:
+    _setup_logging()
 
 
 @app.command()
@@ -159,15 +186,15 @@ def fetch_consumption(
 
     try:
         settings = Settings()  # ty:ignore[missing-argument]
-    except Exception as exc:
-        typer.echo(f"Config error: {exc}", err=True)
+    except Exception:
+        logger.exception("Configuration error")
         raise typer.Exit(1)
 
     try:
         client = OomiClient(settings)
         records = client.get_consumption(resolved_start, resolved_end)
-    except (LoginError, SessionExpiredError) as exc:
-        typer.echo(f"Error: {exc}", err=True)
+    except (LoginError, SessionExpiredError):
+        logger.exception("Failed to fetch consumption data")
         raise typer.Exit(1)
 
     for record in records:
@@ -207,16 +234,15 @@ def write_consumption_cmd(
     try:
         settings = Settings()  # ty:ignore[missing-argument]
         influx_settings = InfluxSettings()  # ty:ignore[missing-argument]
-    except Exception as exc:
-        typer.echo(f"Config error: {exc}", err=True)
+    except Exception:
+        logger.exception("Configuration error")
         raise typer.Exit(1)
 
     try:
         client = OomiClient(settings)
         records = client.get_consumption(resolved_start, resolved_end)
-    except (LoginError, SessionExpiredError) as exc:
-        typer.echo(f"Error: {exc}", err=True)
+    except (LoginError, SessionExpiredError):
+        logger.exception("Failed to fetch consumption data")
         raise typer.Exit(1)
 
     write_consumption(records, influx_settings)
-    typer.echo(f"Wrote {len(records)} records to InfluxDB.")

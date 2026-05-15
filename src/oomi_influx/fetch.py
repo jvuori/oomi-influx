@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from decimal import Decimal
 
@@ -7,6 +8,8 @@ import httpx
 from ._aura import BASE_URL, _aura_call, _aura_context
 from .config import Settings
 from .models import AccountInfo, ConsumptionRecord
+
+logger = logging.getLogger(__name__)
 
 
 class SessionExpiredError(Exception):
@@ -91,6 +94,7 @@ def fetch_consumption(
     start: datetime,
     end: datetime,
 ) -> list[ConsumptionRecord]:
+    logger.info("Fetching consumption records %s → %s", start.date(), end.date())
     url = f"{BASE_URL}/s/sfsites/aura?r=1&aura.ApexAction.execute=1"
     data = {
         "message": _aura_message(settings, start, end),

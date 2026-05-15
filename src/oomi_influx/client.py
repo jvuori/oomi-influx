@@ -1,3 +1,4 @@
+import logging
 import re
 import urllib.parse
 from datetime import datetime
@@ -9,6 +10,8 @@ from ._aura import BASE_URL
 from .config import Settings
 from .fetch import SessionExpiredError
 from .models import ConsumptionRecord
+
+logger = logging.getLogger(__name__)
 
 _FWUID_RE = re.compile(r"/sfsites/auraFW/javascript/([A-Za-z0-9_\-]+)/aura_prod\.js")
 
@@ -95,7 +98,9 @@ class OomiClient:
         if self._client is not None:
             self._client.close()
             self._client = None
+        logger.info("Logging in to Oomi as %s", self._settings.username)
         session_id = form_login(self._settings.username, self._settings.password)
+        logger.info("Establishing Oomi session")
         self._client, self._aura_token, self._fwuid = establish_session(session_id)
 
     def _ensure_authenticated(self) -> tuple[httpx.Client, str, str]:
@@ -110,8 +115,11 @@ class OomiClient:
     ) -> list[ConsumptionRecord]:
         client, token, fwuid = self._ensure_authenticated()
         try:
-            return _fetch.fetch_consumption(client, token, fwuid, self._settings, start, end)
+            return _fetch.fetch_consumption(
+                client, token, fwuid, self._settings, start, end
+            )
         except SessionExpiredError:
+            logger.warning("Session expired — re-authenticating")
             self._authenticate()
             assert self._client is not None
             assert self._aura_token is not None

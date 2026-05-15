@@ -97,4 +97,3 @@ def test_fetch_consumption_login_error(monkeypatch: pytest.MonkeyPatch) -> None:
         result = runner.invoke(app, ["fetch", "consumption"])
 
     assert result.exit_code == 1
-    assert "bad creds" in result.output

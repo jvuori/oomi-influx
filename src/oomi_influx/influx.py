@@ -1,14 +1,24 @@
+import logging
+
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from .config import InfluxSettings
 from .models import ConsumptionRecord
 
+logger = logging.getLogger(__name__)
+
 
 def write_consumption(
     records: list[ConsumptionRecord],
     settings: InfluxSettings,
 ) -> None:
+    logger.info(
+        "Writing %d records to InfluxDB (%s / %s)",
+        len(records),
+        settings.org,
+        settings.bucket,
+    )
     client = InfluxDBClient(
         url=settings.url,
         token=settings.token,
