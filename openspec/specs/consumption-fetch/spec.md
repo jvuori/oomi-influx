@@ -11,7 +11,7 @@ meter point, returning typed Python objects.
 @dataclass
 class ConsumptionRecord:
     timestamp: datetime   # UTC, start of 15-min slot
-    kwh: float            # energy consumed (kWh), field bn01
+    kwh: Decimal          # energy consumed (kWh), field bn01
 ```
 
 ## Requirements

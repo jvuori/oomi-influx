@@ -6,7 +6,8 @@ from typing import Annotated, Optional
 import typer
 
 from .auth import form_login
-from .config import Settings
+from .config import InfluxSettings, Settings
+from .influx import write_consumption
 from .models import LoginError, SessionExpiredError
 from .session import OomiSession
 
@@ -89,3 +90,46 @@ def fetch_consumption(
             )
             + "\n"
         )
+
+
+write_app = typer.Typer(no_args_is_help=True)
+app.add_typer(write_app, name="write")
+
+
+@write_app.command("consumption")
+def write_consumption_cmd(
+    start: Annotated[
+        Optional[str],
+        typer.Option(
+            "--start", help="Start datetime (ISO 8601 UTC). Default: 7 days ago."
+        ),
+    ] = None,
+    end: Annotated[
+        Optional[str],
+        typer.Option("--end", help="End datetime (ISO 8601 UTC). Default: now."),
+    ] = None,
+) -> None:
+    """Fetch consumption records and write them to InfluxDB."""
+    now = datetime.now(tz=timezone.utc)
+    default_start = (now - timedelta(days=7)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    resolved_start = _parse_dt(start, default_start)
+    resolved_end = _parse_dt(end, now)
+
+    try:
+        settings = Settings()  # ty:ignore[missing-argument]
+        influx_settings = InfluxSettings()  # ty:ignore[missing-argument]
+    except Exception as exc:
+        typer.echo(f"Config error: {exc}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        session = OomiSession(settings)
+        records = session.get_consumption(resolved_start, resolved_end)
+    except (LoginError, SessionExpiredError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(1)
+
+    write_consumption(records, influx_settings, settings.metering_point)
+    typer.echo(f"Wrote {len(records)} records to InfluxDB.")

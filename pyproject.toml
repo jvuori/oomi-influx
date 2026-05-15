@@ -10,6 +10,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
+    "influxdb-client>=1.50.0",
 ]
 
 [project.scripts]
@@ -21,12 +22,13 @@ dev = [
     "ty>=0.0.1a10",
     "pytest>=8",
     "pytest-httpx>=0.30",
+    "testcontainers>=4.14.2",
 ]
 
 [tool.pytest.ini_options]
 addopts = "-m 'not integration'"
 markers = [
-    "integration: tests against the live Oomi service (requires .env with real credentials)",
+    "integration: tests against live external services (Oomi or InfluxDB); requires credentials and/or Docker",
 ]
 
 [build-system]
