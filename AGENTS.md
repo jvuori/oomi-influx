@@ -25,6 +25,17 @@
 - Keep the dependency surface **as small as possible** — every dependency is an attack surface and an upgrade burden.
 - Prefer packages from the Python scientific / data ecosystem (e.g. `httpx`, `influxdb-client`, `pydantic`) over obscure alternatives.
 
+## Test-driven development
+
+When fixing a bug:
+
+1. Write a **failing test** that reproduces the bug first.
+2. Verify the test fails for the right reason.
+3. Apply the fix.
+4. Verify the test now passes.
+
+A fix without a preceding failing test is not acceptable.
+
 ## Linting and quality
 
 Before every commit:
