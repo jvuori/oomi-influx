@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 from typing import Annotated, Optional
 
 import typer
-from dotenv import dotenv_values
+from dotenv import dotenv_values, load_dotenv
 
 from .client import LoginError, OomiClient, establish_session, form_login
 from .config import InfluxSettings, Settings
@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def _setup_logging() -> None:
+    load_dotenv()
     root = logging.getLogger()
     if root.handlers:
         return
