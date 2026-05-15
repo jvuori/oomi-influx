@@ -164,7 +164,13 @@ with `which oomi-influx` and use the full path if systemd cannot find it.
 ### cron
 
 ```cron
-0 * * * * cd ~/oomi-config && oomi-influx write consumption
+# ┌─ minute (0 = top of the hour)
+# │  ┌─ hour (every hour)
+# │  │  ┌─ day of month (every day)
+# │  │  │  ┌─ month (every month)
+# │  │  │  │  ┌─ day of week (every day)
+# │  │  │  │  │
+  0  *  *  *  *  cd ~/oomi-config && oomi-influx write consumption
 ```
 
 ## Contributing
