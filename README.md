@@ -24,30 +24,41 @@ Each consumption slot is a 15-minute UTC-timestamped record written to InfluxDB 
 
 ## Requirements
 
-- Python 3.13+
-- [uv](https://docs.astral.sh/uv/) (package manager)
+- [uv](https://docs.astral.sh/uv/)
 - An Oomi customer account with smart meter access
 - InfluxDB 2.x instance
 
 ## Installation
 
+Install as a persistent uv tool (puts `oomi-influx` on your `PATH`):
+
 ```bash
-git clone <repo-url>
-cd oomi-influx
-uv sync
+uv tool install oomi-influx
+```
+
+To try it without installing:
+
+```bash
+uvx oomi-influx --help
 ```
 
 ## Configuration
 
-Run the interactive setup wizard — it logs in, fetches your meter details
-automatically, and writes `.env` for you:
+Create a directory to hold the configuration, then run the interactive setup
+wizard from it. The wizard logs in, fetches your meter details automatically,
+and writes `.env` to the current directory:
 
 ```bash
-uv run oomi-influx configure
+mkdir ~/oomi-config && cd ~/oomi-config
+oomi-influx configure
 ```
 
-The wizard prompts for each setting and uses existing `.env` values as defaults,
-so re-running it only asks you to confirm or change individual values.
+The wizard uses any existing `.env` values as defaults, so re-running it only
+asks you to confirm or change individual values.
+
+> **`.env` is read from the working directory.** Always run `oomi-influx` from
+> the directory that contains your `.env`, or set the variables in your
+> environment directly.
 
 ### Environment variables
 
@@ -89,10 +100,10 @@ cp .env.example .env
 
 ```bash
 # Last 7 days (default)
-uv run oomi-influx fetch consumption
+oomi-influx fetch consumption
 
 # Specific range
-uv run oomi-influx fetch consumption --start 2026-05-01T00:00:00Z --end 2026-05-14T00:00:00Z
+oomi-influx fetch consumption --start 2026-05-01T00:00:00Z --end 2026-05-14T00:00:00Z
 ```
 
 Output is NDJSON on stdout, one record per line:
@@ -105,10 +116,10 @@ Output is NDJSON on stdout, one record per line:
 
 ```bash
 # Last 7 days (default)
-uv run oomi-influx write consumption
+oomi-influx write consumption
 
 # Specific range
-uv run oomi-influx write consumption --start 2026-05-01T00:00:00Z --end 2026-05-14T00:00:00Z
+oomi-influx write consumption --start 2026-05-01T00:00:00Z --end 2026-05-14T00:00:00Z
 ```
 
 Fetches from Oomi and writes directly to the configured InfluxDB bucket in one step.
@@ -126,9 +137,8 @@ Description=Fetch and write Oomi consumption data to InfluxDB
 [Service]
 Type=oneshot
 User=<your-user>
-WorkingDirectory=/path/to/oomi-influx
-EnvironmentFile=/path/to/oomi-influx/.env
-ExecStart=uv run oomi-influx write consumption
+WorkingDirectory=/home/<your-user>/oomi-config
+ExecStart=oomi-influx write consumption
 ```
 
 Create `/etc/systemd/system/oomi-influx.timer`:
@@ -149,10 +159,14 @@ WantedBy=timers.target
 sudo systemctl enable --now oomi-influx.timer
 ```
 
+`WorkingDirectory` should point to the directory that contains your `.env`.
+`oomi-influx` is the binary installed by `uv tool install` — confirm its path
+with `which oomi-influx` and use the full path if systemd cannot find it.
+
 ### cron
 
 ```cron
-0 * * * * cd /path/to/oomi-influx && uv run oomi-influx write consumption
+0 * * * * cd ~/oomi-config && oomi-influx write consumption
 ```
 
 ## Contributing
