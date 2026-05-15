@@ -62,11 +62,9 @@ asks you to confirm or change individual values.
 
 ### Environment variables
 
-All settings can also be set manually in `.env`. Use `.env.example` as a template:
-
-```bash
-cp .env.example .env
-```
+`oomi-influx configure` writes all required variables to `.env` for you. If you
+prefer to set them manually, create `.env` in your config directory with the
+following variables:
 
 #### Oomi
 
