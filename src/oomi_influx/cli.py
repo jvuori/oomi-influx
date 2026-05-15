@@ -49,7 +49,10 @@ def _init(
     _version: Annotated[
         bool,
         typer.Option(
-            "--version", callback=_version_callback, is_eager=True, help="Show version and exit."
+            "--version",
+            callback=_version_callback,
+            is_eager=True,
+            help="Show version and exit.",
         ),
     ] = False,
 ) -> None:
