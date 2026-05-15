@@ -4,8 +4,10 @@ from datetime import datetime
 
 import httpx
 
+from . import fetch as _fetch
 from ._aura import BASE_URL
 from .config import Settings
+from .fetch import SessionExpiredError
 from .models import ConsumptionRecord
 
 _FWUID_RE = re.compile(r"/sfsites/auraFW/javascript/([A-Za-z0-9_\-]+)/aura_prod\.js")
@@ -90,6 +92,9 @@ class OomiClient:
         self._fwuid: str = ""
 
     def _authenticate(self) -> None:
+        if self._client is not None:
+            self._client.close()
+            self._client = None
         session_id = form_login(self._settings.username, self._settings.password)
         self._client, self._aura_token, self._fwuid = establish_session(session_id)
 
@@ -103,15 +108,13 @@ class OomiClient:
     def get_consumption(
         self, start: datetime, end: datetime
     ) -> list[ConsumptionRecord]:
-        from .fetch import SessionExpiredError, fetch_consumption
-
         client, token, fwuid = self._ensure_authenticated()
         try:
-            return fetch_consumption(client, token, fwuid, self._settings, start, end)
+            return _fetch.fetch_consumption(client, token, fwuid, self._settings, start, end)
         except SessionExpiredError:
             self._authenticate()
             assert self._client is not None
             assert self._aura_token is not None
-            return fetch_consumption(
+            return _fetch.fetch_consumption(
                 self._client, self._aura_token, self._fwuid, self._settings, start, end
             )

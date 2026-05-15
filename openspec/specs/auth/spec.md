@@ -14,7 +14,7 @@ Verify Oomi credentials and establish a headless Salesforce session.
 
 ### Form login
 
-- REQ-AUTH-02: `form_login(username, password) -> str` POSTs to `BASE_URL/login`
+- REQ-AUTH-02: `form_login(username, password) -> str` in `client.py` POSTs to `BASE_URL/login`
   with form fields `username`, `un` (JS copies username→un before submit), `pw`, and
   standard Salesforce community login parameters (`startURL`, `lt`, `Login`, `useSecure`,
   `hasRememberUn`, `display`). Returns the `sessionId` from the `sid=` query parameter
@@ -24,7 +24,7 @@ Verify Oomi credentials and establish a headless Salesforce session.
 
 ### Session establishment
 
-- REQ-AUTH-04: `establish_session(session_id) -> tuple[httpx.Client, str, str]` performs:
+- REQ-AUTH-04: `establish_session(session_id) -> tuple[httpx.Client, str, str]` in `client.py` performs:
   1. GET `BASE_URL/secur/frontdoor.jsp?sid={session_id}&retURL=/s/` with `follow_redirects=True`.
   2. GET `BASE_URL/s/` on the resulting client (cookie jar carries the community session cookie).
   3. Reads `aura_token` from the first cookie whose name contains `ERIC`
@@ -35,8 +35,9 @@ Verify Oomi credentials and establish a headless Salesforce session.
 - REQ-AUTH-05: If the ERIC cookie is absent, raises `AuraTokenNotFound`.
 - REQ-AUTH-06: If the fwuid regex does not match, raises `FwuidNotFound`.
 
-### CLI — `auth login`
+### CLI — `configure`
 
-- REQ-AUTH-07: `oomi-influx auth login` reads credentials from `Settings` (env vars /
-  `.env`), calls `form_login` to verify they work, and prints a success message.
+- REQ-AUTH-07: `oomi-influx configure` is an interactive wizard that prompts for
+  credentials, calls `form_login` to verify them, fetches account info, prompts for
+  InfluxDB settings, and writes all values to `.env`.
 - REQ-AUTH-08: Exits non-zero on `LoginError` with the error message.

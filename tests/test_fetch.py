@@ -16,7 +16,7 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
     monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
     monkeypatch.setenv("OOMI_PASSWORD", "secret")
-    return Settings()  # type: ignore[call-arg]
+    return Settings()  # ty:ignore[missing-argument]
 
 
 NDJSON_ROWS = "\n".join(

@@ -19,24 +19,22 @@ Config SHALL be provided via a `InfluxSettings(BaseSettings)` class with
 
 ### Requirement: Write consumption records
 
-`write_consumption(records: list[ConsumptionRecord], settings: InfluxSettings, metering_point: str) -> None`
-SHALL write each record to InfluxDB using the following schema:
-- **measurement**: `electricity_consumption`
-- **tag**: `metering_point` (value from the `metering_point` argument)
+`write_consumption(records: list[ConsumptionRecord], settings: InfluxSettings) -> None`
+SHALL write each record to InfluxDB using the schema defined in `InfluxSettings`:
+- **measurement**: `settings.measurement` (default `electricity_consumption`)
+- **tag**: `settings.tag_key` = `settings.tag_value` (default key `metering_point`)
 - **fields**:
-  - `consumption_kwh` (`float`, cast from `Decimal`)
-  - `consumption_wh` (`float`, `consumption_kwh × 1000`)
-  - `resolution` (`str`, always `"PT15MIN"`)
+  - `settings.field_kwh` (`float`, cast from `Decimal`; default `consumption_kwh`)
+  - `settings.field_wh` (`float`, value × 1000; default `consumption_wh`)
+  - `settings.field_resolution` (`str`, always `"PT15MIN"`; default `resolution`)
 - **timestamp**: `record.timestamp` (UTC, nanosecond precision)
-
-The `metering_point` value is derived from the GSRN as `gsrn[-8:-1]`
-(7-digit meter identifier, stripping the GS1 prefix and check digit).
 
 The function SHALL use batch writes and close the client on completion.
 
 #### Scenario: Write succeeds
 - **WHEN** `write_consumption` is called with a non-empty list and valid settings
-- **THEN** each record appears as a point in the InfluxDB bucket with measurement `electricity_consumption`, tag `metering_point`, and fields `consumption_kwh`, `consumption_wh`, `resolution`
+- **THEN** each record appears as a point in the InfluxDB bucket with the configured
+  measurement, tag, and fields
 
 #### Scenario: Empty list
 - **WHEN** `write_consumption` is called with an empty list
@@ -46,22 +44,12 @@ The function SHALL use batch writes and close the client on completion.
 - **WHEN** `write_consumption` completes (success or exception)
 - **THEN** the InfluxDB client is closed
 
-### Requirement: Metering point derivation
-
-`Settings.metering_point` SHALL be a computed field derived from `Settings.gsrn` as
-`gsrn[-8:-1]` — the 7-digit meter identifier embedded in the 18-digit GSRN, excluding
-the trailing check digit.
-
-#### Scenario: Metering point from GSRN
-- **WHEN** `OOMI_GSRN=YOUR_GSRN_HERE` is configured
-- **THEN** `Settings().metering_point == "YOUR_METERING_POINT_HERE"`
-
 ### Requirement: CLI `write consumption` subcommand
 
 `oomi-influx write consumption [--start ISO] [--end ISO]` SHALL:
 1. Load `Settings` (Oomi) and `InfluxSettings` (InfluxDB).
-2. Call `OomiSession.get_consumption(start, end)`.
-3. Call `write_consumption(records, influx_settings, settings.metering_point)`.
+2. Call `OomiClient.get_consumption(start, end)`.
+3. Call `write_consumption(records, influx_settings)`.
 4. Exit zero on success.
 
 Default date range SHALL match `fetch consumption`: `--start` = 7 days ago 00:00 UTC,

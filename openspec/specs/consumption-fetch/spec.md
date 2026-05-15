@@ -21,12 +21,13 @@ class ConsumptionRecord:
 - REQ-FETCH-01: Runtime config loaded from environment / `.env`:
   - `OOMI_GSRN` — meter EAN (e.g. `643000000000000000`)
   - `OOMI_CUSTOMER_ID` — Salesforce `customerIdentification` field value
-  - Portal base URL is the compile-time constant `BASE_URL = "https://www.oma.oomi.fi"` in `config.py`.
+  - Portal base URL is the compile-time constant `BASE_URL = "https://www.oma.oomi.fi"`
+    in `_aura.py` (private module).
 
 ### Fetch function
 
 - REQ-FETCH-02: `fetch_consumption(client, aura_token, fwuid, settings, start, end) -> list[ConsumptionRecord]`
-  POSTs to `/s/sfsites/aura?r=1&aura.ApexAction.execute=1` with:
+  in `fetch.py` POSTs to `/s/sfsites/aura?r=1&aura.ApexAction.execute=1` with:
   - `message` JSON: `oomi_ConsumptionController.getConsumption`, period `PT15M`,
     `fetchParams: ["Consumption"]`, `readingTypes: ["BN01"]`.
   - `aura.token` from the session.
@@ -36,16 +37,16 @@ class ConsumptionRecord:
 - REQ-FETCH-04: On HTTP 4xx that indicates session expiry (redirect to `/s/login` in
   response or status 401), raises `SessionExpiredError`.
 
-### Session wrapper
+### Client wrapper
 
-- REQ-FETCH-05: `OomiSession.get_consumption(start, end) -> list[ConsumptionRecord]`
-  calls `fetch_consumption`; on `SessionExpiredError` re-authenticates once via
-  `auth.form_login` + `auth.establish_session` and retries exactly once.
+- REQ-FETCH-05: `OomiClient.get_consumption(start, end) -> list[ConsumptionRecord]`
+  in `client.py` calls `fetch_consumption`; on `SessionExpiredError` re-authenticates
+  once via `form_login` + `establish_session` and retries exactly once.
 
 ### CLI — `fetch consumption`
 
 - REQ-FETCH-06: `oomi-influx fetch consumption [--start ISO] [--end ISO]` calls
-  `OomiSession.get_consumption` and writes NDJSON to stdout (one record per line as
+  `OomiClient.get_consumption` and writes NDJSON to stdout (one record per line as
   `{"timestamp": "...", "kwh": ...}`).
 - REQ-FETCH-07: Defaults: `--start` = 7 days ago 00:00 UTC; `--end` = now UTC.
 - REQ-FETCH-08: Exits non-zero on `LoginError` or `SessionExpiredError` with a clear
