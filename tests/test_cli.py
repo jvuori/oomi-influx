@@ -137,3 +137,27 @@ def test_setup_logging_adds_file_handler_regardless_of_existing_handlers(
     assert len(new_file_handlers) == 1, (
         "_setup_logging() must add a RotatingFileHandler even when root already has handlers"
     )
+
+
+def test_log_timestamps_include_timezone_offset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Log timestamps must include a UTC offset so they are unambiguous."""
+    import io
+    import oomi_influx.cli as cli_mod
+
+    monkeypatch.setattr(cli_mod, "_logging_configured", False)
+    stream = io.StringIO()
+    # Replace stderr with a buffer so we can inspect the formatted output
+    monkeypatch.setattr("sys.stderr", stream)
+
+    cli_mod._setup_logging()
+    logging.getLogger("oomi_influx").info("test message")
+
+    output = stream.getvalue()
+    # Timezone offset looks like +0300 or -0500 or +0000
+    import re
+
+    assert re.search(r"[+-]\d{4}", output), (
+        f"Expected UTC offset (e.g. +0300) in log output, got: {output!r}"
+    )

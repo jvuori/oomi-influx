@@ -29,7 +29,7 @@ def _setup_logging() -> None:
     root = logging.getLogger()
     root.setLevel(logging.INFO)
     fmt = logging.Formatter(
-        "%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        "%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S%z"
     )
     stderr_handler = logging.StreamHandler()
     stderr_handler.setFormatter(fmt)
