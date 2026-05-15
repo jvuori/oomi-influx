@@ -2,13 +2,12 @@ import json
 from datetime import datetime, timezone
 from decimal import Decimal
 
+import httpx
 import pytest
 from pytest_httpx import HTTPXMock
-import httpx
 
 from oomi_influx.config import Settings
-from oomi_influx.fetch import fetch_consumption
-from oomi_influx.models import SessionExpiredError
+from oomi_influx.fetch import SessionExpiredError, fetch_consumption
 
 
 @pytest.fixture()
@@ -17,7 +16,7 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
     monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
     monkeypatch.setenv("OOMI_PASSWORD", "secret")
-    return Settings()  # type: ignore[missing-argument]  # ty:ignore[missing-argument]
+    return Settings()  # type: ignore[call-arg]
 
 
 NDJSON_ROWS = "\n".join(

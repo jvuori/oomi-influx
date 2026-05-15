@@ -15,19 +15,3 @@ class AccountInfo:
     gsrn: str
     first_name: str
     last_name: str
-
-
-class LoginError(Exception):
-    pass
-
-
-class AuraTokenNotFound(Exception):
-    pass
-
-
-class FwuidNotFound(Exception):
-    pass
-
-
-class SessionExpiredError(Exception):
-    pass

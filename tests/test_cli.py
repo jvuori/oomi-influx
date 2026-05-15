@@ -7,7 +7,8 @@ import pytest
 from typer.testing import CliRunner
 
 from oomi_influx.cli import app
-from oomi_influx.models import AccountInfo, ConsumptionRecord, LoginError
+from oomi_influx.client import LoginError
+from oomi_influx.models import AccountInfo, ConsumptionRecord
 
 runner = CliRunner()
 
@@ -64,8 +65,8 @@ def test_fetch_consumption_stdout_ndjson(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
     monkeypatch.setenv("OOMI_PASSWORD", "secret")
 
-    with patch("oomi_influx.cli.OomiSession") as MockSession:
-        MockSession.return_value.get_consumption.return_value = [RECORD]
+    with patch("oomi_influx.cli.OomiClient") as MockClient:
+        MockClient.return_value.get_consumption.return_value = [RECORD]
         result = runner.invoke(
             app,
             [
@@ -91,8 +92,8 @@ def test_fetch_consumption_login_error(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
     monkeypatch.setenv("OOMI_PASSWORD", "bad")
 
-    with patch("oomi_influx.cli.OomiSession") as MockSession:
-        MockSession.return_value.get_consumption.side_effect = LoginError("bad creds")
+    with patch("oomi_influx.cli.OomiClient") as MockClient:
+        MockClient.return_value.get_consumption.side_effect = LoginError("bad creds")
         result = runner.invoke(app, ["fetch", "consumption"])
 
     assert result.exit_code == 1

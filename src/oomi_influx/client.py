@@ -1,13 +1,26 @@
 import re
 import urllib.parse
+from datetime import datetime
 
 import httpx
 
-from .config import BASE_URL
-from .models import AuraTokenNotFound, FwuidNotFound, LoginError
+from ._aura import BASE_URL
+from .config import Settings
+from .models import ConsumptionRecord
 
-# Matches the fwuid embedded in the aura_prod.js script URL on the /s/ page.
 _FWUID_RE = re.compile(r"/sfsites/auraFW/javascript/([A-Za-z0-9_\-]+)/aura_prod\.js")
+
+
+class LoginError(Exception):
+    pass
+
+
+class AuraTokenNotFound(Exception):
+    pass
+
+
+class FwuidNotFound(Exception):
+    pass
 
 
 def form_login(username: str, password: str) -> str:
@@ -17,7 +30,7 @@ def form_login(username: str, password: str) -> str:
             f"{BASE_URL}/login",
             data={
                 "username": username,
-                "un": username,  # JS copies username→un before submit
+                "un": username,
                 "pw": password,
                 "startURL": "/s/",
                 "lt": "standard",
@@ -67,3 +80,38 @@ def establish_session(session_id: str) -> tuple[httpx.Client, str, str]:
     fwuid = fwuid_match.group(1)
 
     return client, aura_token, fwuid
+
+
+class OomiClient:
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+        self._client: httpx.Client | None = None
+        self._aura_token: str | None = None
+        self._fwuid: str = ""
+
+    def _authenticate(self) -> None:
+        session_id = form_login(self._settings.username, self._settings.password)
+        self._client, self._aura_token, self._fwuid = establish_session(session_id)
+
+    def _ensure_authenticated(self) -> tuple[httpx.Client, str, str]:
+        if self._client is None or self._aura_token is None:
+            self._authenticate()
+        assert self._client is not None
+        assert self._aura_token is not None
+        return self._client, self._aura_token, self._fwuid
+
+    def get_consumption(
+        self, start: datetime, end: datetime
+    ) -> list[ConsumptionRecord]:
+        from .fetch import SessionExpiredError, fetch_consumption
+
+        client, token, fwuid = self._ensure_authenticated()
+        try:
+            return fetch_consumption(client, token, fwuid, self._settings, start, end)
+        except SessionExpiredError:
+            self._authenticate()
+            assert self._client is not None
+            assert self._aura_token is not None
+            return fetch_consumption(
+                self._client, self._aura_token, self._fwuid, self._settings, start, end
+            )

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from oomi_influx.auth import establish_session, form_login
+from oomi_influx.client import establish_session, form_login
 from oomi_influx.config import Settings
 from oomi_influx.fetch import fetch_consumption
 

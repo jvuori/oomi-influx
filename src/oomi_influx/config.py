@@ -1,7 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_URL = "https://www.oma.oomi.fi"
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(

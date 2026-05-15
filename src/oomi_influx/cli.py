@@ -6,12 +6,10 @@ from typing import Annotated, Optional
 import typer
 from dotenv import dotenv_values
 
-from .auth import establish_session, form_login
+from .client import LoginError, OomiClient, establish_session, form_login
 from .config import InfluxSettings, Settings
-from .fetch import fetch_account_info
+from .fetch import SessionExpiredError, fetch_account_info
 from .influx import write_consumption
-from .models import LoginError, SessionExpiredError
-from .session import OomiSession
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -166,8 +164,8 @@ def fetch_consumption(
         raise typer.Exit(1)
 
     try:
-        session = OomiSession(settings)
-        records = session.get_consumption(resolved_start, resolved_end)
+        client = OomiClient(settings)
+        records = client.get_consumption(resolved_start, resolved_end)
     except (LoginError, SessionExpiredError) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1)
@@ -214,8 +212,8 @@ def write_consumption_cmd(
         raise typer.Exit(1)
 
     try:
-        session = OomiSession(settings)
-        records = session.get_consumption(resolved_start, resolved_end)
+        client = OomiClient(settings)
+        records = client.get_consumption(resolved_start, resolved_end)
     except (LoginError, SessionExpiredError) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1)
