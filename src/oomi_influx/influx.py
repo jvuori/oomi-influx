@@ -13,11 +13,19 @@ def write_consumption(
     records: list[ConsumptionRecord],
     settings: InfluxSettings,
 ) -> None:
+    if records:
+        ts_range = (
+            f": {records[0].timestamp.strftime('%Y-%m-%dT%H:%M:%S%z')}"
+            f" → {records[-1].timestamp.strftime('%Y-%m-%dT%H:%M:%S%z')}"
+        )
+    else:
+        ts_range = ""
     logger.info(
-        "Writing %d records to InfluxDB (%s / %s)",
+        "Writing %d records to InfluxDB (%s / %s)%s",
         len(records),
         settings.org,
         settings.bucket,
+        ts_range,
     )
     client = InfluxDBClient(
         url=settings.url,
