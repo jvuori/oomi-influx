@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
@@ -46,11 +47,35 @@ def test_write_consumption_logs_first_and_last_timestamp(
         with caplog.at_level(logging.INFO, logger="oomi_influx.influx"):
             write_consumption(_RECORDS, _SETTINGS)
 
-    assert "2026-01-01T00:00:00" in caplog.text, (
-        "first record timestamp missing from log"
-    )
-    assert "2026-01-01T00:30:00" in caplog.text, (
-        "last record timestamp missing from log"
+    first_ts = _RECORDS[0].timestamp.astimezone().strftime("%Y-%m-%dT%H:%M:%S")
+    last_ts = _RECORDS[-1].timestamp.astimezone().strftime("%Y-%m-%dT%H:%M:%S")
+    assert first_ts in caplog.text, "first record timestamp missing from log"
+    assert last_ts in caplog.text, "last record timestamp missing from log"
+
+
+def test_write_consumption_timestamp_range_uses_local_timezone(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # A single UTC record at midnight; in UTC+2 it becomes 02:00
+    records = [
+        ConsumptionRecord(
+            timestamp=datetime(2026, 6, 1, 0, 0, tzinfo=timezone.utc),
+            kwh=Decimal("0.100"),
+        ),
+    ]
+    monkeypatch.setenv("TZ", "Europe/Helsinki")
+    time.tzset()
+
+    with patch("oomi_influx.influx.InfluxDBClient", return_value=_mock_influx_client()):
+        with caplog.at_level(logging.INFO, logger="oomi_influx.influx"):
+            write_consumption(records, _SETTINGS)
+
+    monkeypatch.delenv("TZ", raising=False)
+    time.tzset()
+
+    assert "+0300" in caplog.text, (
+        f"expected Helsinki offset +0300 in timestamp range, got: {caplog.text!r}"
     )
 
 

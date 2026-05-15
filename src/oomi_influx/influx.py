@@ -15,8 +15,8 @@ def write_consumption(
 ) -> None:
     if records:
         ts_range = (
-            f": {records[0].timestamp.strftime('%Y-%m-%dT%H:%M:%S%z')}"
-            f" → {records[-1].timestamp.strftime('%Y-%m-%dT%H:%M:%S%z')}"
+            f": {records[0].timestamp.astimezone().strftime('%Y-%m-%dT%H:%M:%S%z')}"
+            f" → {records[-1].timestamp.astimezone().strftime('%Y-%m-%dT%H:%M:%S%z')}"
         )
     else:
         ts_range = ""
