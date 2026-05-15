@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+from importlib.metadata import version
 from logging.handlers import RotatingFileHandler
 from typing import Annotated, Optional
 
@@ -37,8 +38,21 @@ def _setup_logging() -> None:
         root.addHandler(fh)
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(version("oomi-influx"))
+        raise typer.Exit()
+
+
 @app.callback()
-def _init() -> None:
+def _init(
+    _version: Annotated[
+        bool,
+        typer.Option(
+            "--version", callback=_version_callback, is_eager=True, help="Show version and exit."
+        ),
+    ] = False,
+) -> None:
     _setup_logging()
 
 
