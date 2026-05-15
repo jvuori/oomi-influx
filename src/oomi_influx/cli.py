@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def _setup_logging() -> None:
-    load_dotenv(".env")
+    load_dotenv(".env", override=True)
     root = logging.getLogger()
     if root.handlers:
         return
