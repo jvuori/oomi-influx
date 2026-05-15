@@ -1,13 +1,13 @@
 import json
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 from oomi_influx.cli import app
-from oomi_influx.models import ConsumptionRecord, LoginError
+from oomi_influx.models import AccountInfo, ConsumptionRecord, LoginError
 
 runner = CliRunner()
 
@@ -16,28 +16,43 @@ RECORD = ConsumptionRecord(
     kwh=Decimal("0.237"),
 )
 
+_CONFIGURE_INFLUX_INPUT = "\nmytoken\nmyorg\nmybucket\n\n\n\n\n\n\n"
 
-def test_auth_login_success(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
-    monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
-    monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
-    monkeypatch.setenv("OOMI_PASSWORD", "secret")
 
-    with patch("oomi_influx.cli.form_login", return_value="SID"):
-        result = runner.invoke(app, ["auth", "login"])
+def test_configure_success() -> None:
+    fake_info = AccountInfo(
+        customer_id="CUST123",
+        gsrn="643000000000000000",
+        first_name="Test",
+        last_name="User",
+    )
+    with (
+        patch("oomi_influx.cli.dotenv_values", return_value={}),
+        patch("oomi_influx.cli.form_login", return_value="SID"),
+        patch(
+            "oomi_influx.cli.establish_session", return_value=(MagicMock(), "tok", "fw")
+        ),
+        patch("oomi_influx.cli.fetch_account_info", return_value=fake_info),
+    ):
+        with runner.isolated_filesystem():
+            result = runner.invoke(
+                app,
+                ["configure"],
+                input=f"u@x.com\nsecret\n{_CONFIGURE_INFLUX_INPUT}",
+            )
 
     assert result.exit_code == 0, result.output
     assert "OK" in result.output
+    assert "Test User" in result.output
 
 
-def test_auth_login_bad_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
-    monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
-    monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
-    monkeypatch.setenv("OOMI_PASSWORD", "wrong")
-
-    with patch("oomi_influx.cli.form_login", side_effect=LoginError("Invalid login")):
-        result = runner.invoke(app, ["auth", "login"])
+def test_configure_bad_credentials() -> None:
+    with (
+        patch("oomi_influx.cli.dotenv_values", return_value={}),
+        patch("oomi_influx.cli.form_login", side_effect=LoginError("Invalid login")),
+    ):
+        with runner.isolated_filesystem():
+            result = runner.invoke(app, ["configure"], input="u@x.com\nwrong\n")
 
     assert result.exit_code == 1
     assert "Invalid login" in result.output

@@ -39,28 +39,34 @@ uv sync
 
 ## Configuration
 
-Copy `.env.example` to `.env` and fill in your values:
+Run the interactive setup wizard — it logs in, fetches your meter details
+automatically, and writes `.env` for you:
+
+```bash
+uv run oomi-influx configure
+```
+
+The wizard prompts for each setting and uses existing `.env` values as defaults,
+so re-running it only asks you to confirm or change individual values.
+
+### Environment variables
+
+All settings can also be set manually in `.env`. Use `.env.example` as a template:
 
 ```bash
 cp .env.example .env
 ```
 
-### Oomi
+#### Oomi
 
 | Variable | Description |
 |---|---|
-| `OOMI_GSRN` | Your meter EAN (18-digit number on your electricity contract) |
-| `OOMI_CUSTOMER_ID` | Salesforce customer identifier (visible in portal network traffic) |
 | `OOMI_USERNAME` | Your Oomi login email |
 | `OOMI_PASSWORD` | Your Oomi password |
+| `OOMI_GSRN` | Your meter EAN (18-digit; fetched automatically by `configure`) |
+| `OOMI_CUSTOMER_ID` | Salesforce customer identifier (fetched automatically by `configure`) |
 
-#### Finding OOMI_CUSTOMER_ID
-
-Open the Oomi portal in a browser, navigate to the consumption page, and inspect
-network requests in DevTools. Look for a POST to `sfsites/aura` and find
-`customerIdentification` in the request payload.
-
-### InfluxDB
+#### InfluxDB
 
 | Variable | Description | Default |
 |---|---|---|
@@ -78,14 +84,6 @@ network requests in DevTools. Look for a POST to `sfsites/aura` and find
 > **Never commit `.env`** — it is git-ignored. The repository is public.
 
 ## Usage
-
-### Verify credentials
-
-```bash
-uv run oomi-influx auth login
-```
-
-Exits 0 and prints `Credentials OK.` on success; exits 1 with an error message on failure.
 
 ### Fetch consumption data (stdout)
 

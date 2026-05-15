@@ -9,6 +9,14 @@ class ConsumptionRecord:
     kwh: Decimal
 
 
+@dataclass
+class AccountInfo:
+    customer_id: str
+    gsrn: str
+    first_name: str
+    last_name: str
+
+
 class LoginError(Exception):
     pass
 
