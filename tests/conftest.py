@@ -51,7 +51,7 @@ def _create_bucket_and_yield(url: str, token: str, org: str, bucket: str) -> Inf
         client.buckets_api().create_bucket(bucket_name=bucket, org=org)
     finally:
         client.close()
-    return InfluxSettings(url=url, token=token, org=org, bucket=bucket)
+    return InfluxSettings(url=url, token=token, org=org, bucket=bucket, tag_value="test-meter")
 
 
 def _delete_bucket(url: str, token: str, org: str, bucket_name: str) -> None:

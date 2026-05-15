@@ -131,5 +131,5 @@ def write_consumption_cmd(
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1)
 
-    write_consumption(records, influx_settings, settings.metering_point)
+    write_consumption(records, influx_settings)
     typer.echo(f"Wrote {len(records)} records to InfluxDB.")

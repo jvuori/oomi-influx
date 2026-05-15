@@ -10,8 +10,6 @@ from oomi_influx.models import ConsumptionRecord
 
 pytestmark = pytest.mark.integration
 
-_METERING_POINT = "643000000000000001"
-
 
 def _query_points(settings: InfluxSettings) -> list[dict]:
     client = InfluxDBClient(url=settings.url, token=settings.token, org=settings.org)
@@ -19,8 +17,8 @@ def _query_points(settings: InfluxSettings) -> list[dict]:
         query = f'''
 from(bucket: "{settings.bucket}")
   |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == "electricity_consumption")
-  |> filter(fn: (r) => r._field == "consumption_kwh")
+  |> filter(fn: (r) => r._measurement == "{settings.measurement}")
+  |> filter(fn: (r) => r._field == "{settings.field_kwh}")
 '''
         tables = client.query_api().query(query, org=settings.org)
         return [
@@ -48,7 +46,7 @@ def test_write_consumption_round_trip(influx_settings: InfluxSettings) -> None:
         ),
     ]
 
-    write_consumption(records, influx_settings, _METERING_POINT)
+    write_consumption(records, influx_settings)
 
     points = _query_points(influx_settings)
 
@@ -60,4 +58,4 @@ def test_write_consumption_round_trip(influx_settings: InfluxSettings) -> None:
 
 
 def test_write_consumption_empty(influx_settings: InfluxSettings) -> None:
-    write_consumption([], influx_settings, _METERING_POINT)
+    write_consumption([], influx_settings)

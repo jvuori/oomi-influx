@@ -1,4 +1,3 @@
-from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_URL = "https://www.oma.oomi.fi"
@@ -16,11 +15,6 @@ class Settings(BaseSettings):
     username: str
     password: str
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def metering_point(self) -> str:
-        return self.gsrn[-8:-1]
-
 
 class InfluxSettings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -33,3 +27,9 @@ class InfluxSettings(BaseSettings):
     token: str
     org: str
     bucket: str
+    measurement: str = "electricity_consumption"
+    tag_key: str = "metering_point"
+    tag_value: str
+    field_kwh: str = "consumption_kwh"
+    field_wh: str = "consumption_wh"
+    field_resolution: str = "resolution"

@@ -8,7 +8,6 @@ from .models import ConsumptionRecord
 def write_consumption(
     records: list[ConsumptionRecord],
     settings: InfluxSettings,
-    metering_point: str,
 ) -> None:
     client = InfluxDBClient(
         url=settings.url,
@@ -18,11 +17,11 @@ def write_consumption(
     try:
         write_api = client.write_api(write_options=SYNCHRONOUS)
         points = [
-            Point("electricity_consumption")
-            .tag("metering_point", metering_point)
-            .field("consumption_kwh", float(record.kwh))
-            .field("consumption_wh", float(record.kwh) * 1000)
-            .field("resolution", "PT15MIN")
+            Point(settings.measurement)
+            .tag(settings.tag_key, settings.tag_value)
+            .field(settings.field_kwh, float(record.kwh))
+            .field(settings.field_wh, float(record.kwh) * 1000)
+            .field(settings.field_resolution, "PT15MIN")
             .time(record.timestamp, WritePrecision.NS)
             for record in records
         ]
