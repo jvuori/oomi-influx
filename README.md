@@ -175,5 +175,5 @@ with `which oomi-influx` and use the full path if systemd cannot find it.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and how to work
-with Claude Code AI skills used in this project.
+See [CONTRIBUTING.md](https://github.com/jvuori/oomi-influx/blob/master/CONTRIBUTING.md)
+for development setup, testing, and how to work with Claude Code AI skills used in this project.
