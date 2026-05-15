@@ -6,7 +6,7 @@ on:
 
 jobs:
   checks:
-    uses: ./.github/workflows/ci-checks.yml
+    uses: ./.github/workflows/_checks.yml
 
   publish:
     needs: checks

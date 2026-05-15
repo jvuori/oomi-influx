@@ -3,8 +3,26 @@ name: CI
 on:
   push:
     branches: [master]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "README.md"
+      - ".python-version"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/_checks.yml"
   pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "README.md"
+      - ".python-version"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/_checks.yml"
 
 jobs:
   checks:
-    uses: ./.github/workflows/ci-checks.yml
+    uses: ./.github/workflows/_checks.yml
