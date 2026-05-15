@@ -1,6 +1,6 @@
 [project]
 name = "oomi-influx"
-version = "0.1.0"
+dynamic = ["version"]
 description = "ETL ingestion of Oomi energy data into InfluxDB"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -31,6 +31,9 @@ markers = [
     "integration: tests against live external services (Oomi or InfluxDB); requires credentials and/or Docker",
 ]
 
+[tool.hatch.version]
+source = "vcs"
+
 [build-system]
-requires = ["uv_build>=0.10.12,<0.11.0"]
-build-backend = "uv_build"
+requires = ["hatchling>=1.25", "hatch-vcs>=0.4"]
+build-backend = "hatchling.build"

@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 dist/
 *.egg-info/
+src/oomi_influx/_version.py
 .pytest_cache/
 .ruff_cache/
 .claude/
