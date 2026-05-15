@@ -155,35 +155,7 @@ sudo systemctl enable --now oomi-influx.timer
 0 * * * * cd /path/to/oomi-influx && uv run oomi-influx write consumption
 ```
 
-## Development
+## Contributing
 
-### Run tests
-
-```bash
-# Unit tests (no network, no Docker needed)
-uv run pytest
-
-# InfluxDB integration tests (requires Docker)
-uv run pytest -m integration
-
-# InfluxDB integration tests against a pre-provisioned instance
-INFLUX_TEST_URL=http://localhost:8086 \
-INFLUX_TEST_TOKEN=<token> \
-INFLUX_TEST_ORG=<org> \
-uv run pytest -m integration
-```
-
-### Lint and type-check
-
-```bash
-uv run ruff check --fix .
-uv run ruff format .
-uv run ty check .
-```
-
-All checks must pass before committing.
-
-### Debugging login or API issues
-
-Use the `/oomi:debug` skill in Claude Code. It opens the Oomi portal in a browser via
-Playwright, captures live network traffic, and compares it to what the code expects.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and how to work
+with Claude Code AI skills used in this project.
