@@ -1,6 +1,9 @@
 import json
+import logging
 from datetime import datetime, timezone
 from decimal import Decimal
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -97,3 +100,40 @@ def test_fetch_consumption_login_error(monkeypatch: pytest.MonkeyPatch) -> None:
         result = runner.invoke(app, ["fetch", "consumption"])
 
     assert result.exit_code == 1
+
+
+def test_setup_logging_adds_file_handler_regardless_of_existing_handlers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """File handler must be added for OOMI_INFLUX_LOG_FILE even when root already has handlers.
+
+    Reproduces the production bug: if any handler exists on root (e.g. from pytest's logging
+    plugin or a third-party library), `if root.handlers: return` causes _setup_logging() to
+    exit before the RotatingFileHandler is ever attached.
+    """
+    import oomi_influx.cli as cli_mod
+
+    log_file = tmp_path / "oomi.log"
+    monkeypatch.setenv("OOMI_INFLUX_LOG_FILE", str(log_file))
+    monkeypatch.setattr(cli_mod, "_logging_configured", False)
+    # Root logger already has pytest's handlers at this point — do NOT clear them.
+    assert logging.getLogger().handlers, "expected pytest handlers to be present"
+
+    root = logging.getLogger()
+    handlers_before = set(root.handlers)
+
+    cli_mod._setup_logging()
+
+    new_file_handlers = [
+        h
+        for h in root.handlers
+        if isinstance(h, RotatingFileHandler) and h not in handlers_before
+    ]
+    # Cleanup before asserting so the file handle is closed on failure too
+    for h in new_file_handlers:
+        h.close()
+        root.removeHandler(h)
+
+    assert len(new_file_handlers) == 1, (
+        "_setup_logging() must add a RotatingFileHandler even when root already has handlers"
+    )

@@ -18,12 +18,15 @@ from .influx import write_consumption
 app = typer.Typer(no_args_is_help=True)
 logger = logging.getLogger(__name__)
 
+_logging_configured = False
+
 
 def _setup_logging() -> None:
-    load_dotenv(".env", override=True)
-    root = logging.getLogger()
-    if root.handlers:
+    global _logging_configured
+    if _logging_configured:
         return
+    _logging_configured = True
+    root = logging.getLogger()
     root.setLevel(logging.INFO)
     fmt = logging.Formatter(
         "%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -56,6 +59,7 @@ def _init(
         ),
     ] = False,
 ) -> None:
+    load_dotenv(".env", override=True)
     _setup_logging()
 
 
