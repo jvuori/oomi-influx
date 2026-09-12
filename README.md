@@ -118,6 +118,10 @@ oomi-influx write consumption
 
 # Specific range
 oomi-influx write consumption --start 2026-05-01T00:00:00Z --end 2026-05-14T00:00:00Z
+
+# Reconciliation pass: re-fetch a wider window to pick up slots the DSO
+# backfilled after the fact (writes are idempotent, so this is safe to repeat)
+oomi-influx write consumption --lookback-days 60
 ```
 
 Fetches from Oomi and writes directly to the configured InfluxDB bucket in one step.

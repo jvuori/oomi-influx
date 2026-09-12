@@ -20,6 +20,12 @@ logger = logging.getLogger(__name__)
 
 _logging_configured = False
 
+# Frequent runs only need to cover the tip of the series. Oomi/the DSO sometimes
+# backfills missing 15-minute slots weeks after the fact, which a window this
+# short will miss -- a separate, less frequent reconciliation pass with an
+# explicit --lookback-days is what catches those.
+DEFAULT_LOOKBACK_DAYS = 7
+
 
 def _setup_logging() -> None:
     global _logging_configured
@@ -175,6 +181,27 @@ fetch_app = typer.Typer(no_args_is_help=True)
 app.add_typer(fetch_app, name="fetch")
 
 
+def _resolve_start(
+    start: str | None, lookback_days: int | None, now: datetime
+) -> datetime:
+    """Resolve the start of the fetch window.
+
+    `--start` pins an absolute instant; `--lookback-days` pins one relative to
+    `now`. Supplying both is ambiguous, so it is rejected rather than resolved
+    by precedence.
+    """
+    if start is not None and lookback_days is not None:
+        raise typer.BadParameter("--start and --lookback-days are mutually exclusive")
+    if start is not None:
+        return _parse_dt(start, now)
+    days = DEFAULT_LOOKBACK_DAYS if lookback_days is None else lookback_days
+    if days < 1:
+        raise typer.BadParameter("--lookback-days must be at least 1")
+    return (now - timedelta(days=days)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+
 def _parse_dt(value: str | None, default: datetime) -> datetime:
     if value is None:
         return default
@@ -190,7 +217,18 @@ def fetch_consumption(
     start: Annotated[
         Optional[str],
         typer.Option(
-            "--start", help="Start datetime (ISO 8601 UTC). Default: 7 days ago."
+            "--start",
+            help="Start datetime (ISO 8601 UTC). Not usable with --lookback-days.",
+        ),
+    ] = None,
+    lookback_days: Annotated[
+        Optional[int],
+        typer.Option(
+            "--lookback-days",
+            help=(
+                "Start this many days before now, at 00:00 UTC. "
+                f"Default: {DEFAULT_LOOKBACK_DAYS}."
+            ),
         ),
     ] = None,
     end: Annotated[
@@ -200,10 +238,7 @@ def fetch_consumption(
 ) -> None:
     """Fetch consumption records, emit NDJSON to stdout."""
     now = datetime.now(tz=timezone.utc)
-    default_start = (now - timedelta(days=7)).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
-    resolved_start = _parse_dt(start, default_start)
+    resolved_start = _resolve_start(start, lookback_days, now)
     resolved_end = _parse_dt(end, now)
 
     try:
@@ -237,7 +272,18 @@ def write_consumption_cmd(
     start: Annotated[
         Optional[str],
         typer.Option(
-            "--start", help="Start datetime (ISO 8601 UTC). Default: 7 days ago."
+            "--start",
+            help="Start datetime (ISO 8601 UTC). Not usable with --lookback-days.",
+        ),
+    ] = None,
+    lookback_days: Annotated[
+        Optional[int],
+        typer.Option(
+            "--lookback-days",
+            help=(
+                "Start this many days before now, at 00:00 UTC. "
+                f"Default: {DEFAULT_LOOKBACK_DAYS}."
+            ),
         ),
     ] = None,
     end: Annotated[
@@ -247,10 +293,7 @@ def write_consumption_cmd(
 ) -> None:
     """Fetch consumption records and write them to InfluxDB."""
     now = datetime.now(tz=timezone.utc)
-    default_start = (now - timedelta(days=7)).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
-    resolved_start = _parse_dt(start, default_start)
+    resolved_start = _resolve_start(start, lookback_days, now)
     resolved_end = _parse_dt(end, now)
 
     try:

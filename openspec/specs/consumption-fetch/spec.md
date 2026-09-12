@@ -49,5 +49,10 @@ class ConsumptionRecord:
   `OomiClient.get_consumption` and writes NDJSON to stdout (one record per line as
   `{"timestamp": "...", "kwh": ...}`).
 - REQ-FETCH-07: Defaults: `--start` = 7 days ago 00:00 UTC; `--end` = now UTC.
+- REQ-FETCH-09: `--lookback-days N` sets `--start` to N days before now at 00:00 UTC.
+  It exists so an infrequent reconciliation pass can re-fetch a wide window (late DSO
+  backfills of missing slots can land weeks after the fact, outside the default
+  window) without frequent runs paying that cost. Supplying both `--start` and
+  `--lookback-days` is rejected as ambiguous; `N < 1` is rejected.
 - REQ-FETCH-08: Exits non-zero on `LoginError` or `SessionExpiredError` with a clear
   error message. Config validation errors (missing env vars) are also caught and reported.

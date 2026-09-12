@@ -53,7 +53,8 @@ The function SHALL use batch writes and close the client on completion.
 4. Exit zero on success.
 
 Default date range SHALL match `fetch consumption`: `--start` = 7 days ago 00:00 UTC,
-`--end` = now UTC.
+`--end` = now UTC. `--lookback-days` SHALL behave identically to `fetch consumption`
+(see REQ-FETCH-09).
 
 #### Scenario: Successful write
 - **WHEN** all env vars are set and Oomi/InfluxDB are reachable

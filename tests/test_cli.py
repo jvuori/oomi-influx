@@ -161,3 +161,96 @@ def test_log_timestamps_include_timezone_offset(
     assert re.search(r"[+-]\d{4}", output), (
         f"Expected UTC offset (e.g. +0300) in log output, got: {output!r}"
     )
+
+
+def _start_from_call(mock_client: MagicMock) -> datetime:
+    """Extract the resolved start datetime passed to get_consumption()."""
+    args, _ = mock_client.return_value.get_consumption.call_args
+    return args[0]
+
+
+def _oomi_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OOMI_GSRN", "643000000000000000")
+    monkeypatch.setenv("OOMI_CUSTOMER_ID", "CUST123")
+    monkeypatch.setenv("OOMI_USERNAME", "u@x.com")
+    monkeypatch.setenv("OOMI_PASSWORD", "secret")
+
+
+def _influx_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("INFLUX_URL", "http://localhost:8086")
+    monkeypatch.setenv("INFLUX_TOKEN", "tok")
+    monkeypatch.setenv("INFLUX_ORG", "org")
+    monkeypatch.setenv("INFLUX_BUCKET", "bucket")
+
+
+@pytest.mark.parametrize("command", [["fetch"], ["write"]])
+def test_default_window_is_seven_days(
+    command: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The hourly default stays small; reconciliation uses an explicit --lookback-days."""
+    _oomi_env(monkeypatch)
+    _influx_env(monkeypatch)
+
+    with (
+        patch("oomi_influx.cli.OomiClient") as MockClient,
+        patch("oomi_influx.cli.write_consumption"),
+    ):
+        MockClient.return_value.get_consumption.return_value = []
+        result = runner.invoke(app, [*command, "consumption"])
+
+    assert result.exit_code == 0, result.output
+    age_days = (datetime.now(tz=timezone.utc) - _start_from_call(MockClient)).days
+    assert age_days in (7, 8), f"expected ~7-day lookback, got {age_days} days"
+
+
+@pytest.mark.parametrize("command", [["fetch"], ["write"]])
+def test_lookback_days_overrides_default_window(
+    command: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """--lookback-days drives the daily reconciliation pass.
+
+    Reproduces the production gap of 2026-08-07: Oomi backfilled two 15-minute
+    slots after the 7-day rolling window had already moved past that day, so no
+    run ever picked them up again. A 60-day reconciliation window catches them.
+    """
+    _oomi_env(monkeypatch)
+    _influx_env(monkeypatch)
+
+    with (
+        patch("oomi_influx.cli.OomiClient") as MockClient,
+        patch("oomi_influx.cli.write_consumption"),
+    ):
+        MockClient.return_value.get_consumption.return_value = []
+        result = runner.invoke(app, [*command, "consumption", "--lookback-days", "60"])
+
+    assert result.exit_code == 0, result.output
+    start = _start_from_call(MockClient)
+    age_days = (datetime.now(tz=timezone.utc) - start).days
+    assert age_days in (60, 61), f"expected ~60-day lookback, got {age_days} days"
+    assert (start.hour, start.minute, start.second) == (0, 0, 0)
+
+
+@pytest.mark.parametrize("command", [["fetch"], ["write"]])
+def test_start_and_lookback_days_are_mutually_exclusive(
+    command: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Passing both is ambiguous — surface it rather than silently picking one."""
+    _oomi_env(monkeypatch)
+    _influx_env(monkeypatch)
+
+    with patch("oomi_influx.cli.OomiClient") as MockClient:
+        MockClient.return_value.get_consumption.return_value = []
+        result = runner.invoke(
+            app,
+            [
+                *command,
+                "consumption",
+                "--start",
+                "2026-01-01T00:00:00Z",
+                "--lookback-days",
+                "60",
+            ],
+        )
+
+    assert result.exit_code != 0
+    MockClient.return_value.get_consumption.assert_not_called()
