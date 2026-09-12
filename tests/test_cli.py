@@ -177,10 +177,17 @@ def _oomi_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _influx_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every InfluxSettings field without a default.
+
+    The CLI runs inside runner.isolated_filesystem() in these tests so the repo's
+    own .env cannot stand in for a missing var -- that masked an incomplete
+    fixture locally while CI, which has no .env, failed.
+    """
     monkeypatch.setenv("INFLUX_URL", "http://localhost:8086")
     monkeypatch.setenv("INFLUX_TOKEN", "tok")
     monkeypatch.setenv("INFLUX_ORG", "org")
     monkeypatch.setenv("INFLUX_BUCKET", "bucket")
+    monkeypatch.setenv("INFLUX_TAG_VALUE", "test-meter")
 
 
 @pytest.mark.parametrize("command", [["fetch"], ["write"]])
@@ -196,7 +203,8 @@ def test_default_window_is_seven_days(
         patch("oomi_influx.cli.write_consumption"),
     ):
         MockClient.return_value.get_consumption.return_value = []
-        result = runner.invoke(app, [*command, "consumption"])
+        with runner.isolated_filesystem():
+            result = runner.invoke(app, [*command, "consumption"])
 
     assert result.exit_code == 0, result.output
     age_days = (datetime.now(tz=timezone.utc) - _start_from_call(MockClient)).days
@@ -221,7 +229,10 @@ def test_lookback_days_overrides_default_window(
         patch("oomi_influx.cli.write_consumption"),
     ):
         MockClient.return_value.get_consumption.return_value = []
-        result = runner.invoke(app, [*command, "consumption", "--lookback-days", "60"])
+        with runner.isolated_filesystem():
+            result = runner.invoke(
+                app, [*command, "consumption", "--lookback-days", "60"]
+            )
 
     assert result.exit_code == 0, result.output
     start = _start_from_call(MockClient)
@@ -240,17 +251,18 @@ def test_start_and_lookback_days_are_mutually_exclusive(
 
     with patch("oomi_influx.cli.OomiClient") as MockClient:
         MockClient.return_value.get_consumption.return_value = []
-        result = runner.invoke(
-            app,
-            [
-                *command,
-                "consumption",
-                "--start",
-                "2026-01-01T00:00:00Z",
-                "--lookback-days",
-                "60",
-            ],
-        )
+        with runner.isolated_filesystem():
+            result = runner.invoke(
+                app,
+                [
+                    *command,
+                    "consumption",
+                    "--start",
+                    "2026-01-01T00:00:00Z",
+                    "--lookback-days",
+                    "60",
+                ],
+            )
 
     assert result.exit_code != 0
     MockClient.return_value.get_consumption.assert_not_called()
